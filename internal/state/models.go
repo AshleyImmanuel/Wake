@@ -23,18 +23,48 @@ const (
 
 // State represents the current execution state of a task (PRD Section 8.3 & 12).
 type State struct {
-	TaskID         uuid.UUID
-	Objective      string
-	Constraints    []string
-	Decisions      []Decision
-	Completed      []string
-	Current        string
-	Remaining      []string
-	Blocked        []Blocker
-	DoNotRepeat    []string
-	LastVerified   string // e.g. Git commit hash
-	NextAction     string
-	Confidence     ConfidenceLevel
+	TaskID       uuid.UUID
+	Objective    string
+	Constraints  []string
+	Decisions    []Decision
+	Completed    []string
+	Current      string
+	Remaining    []string
+	Blocked      []Blocker
+	DoNotRepeat  []string
+	LastVerified string // e.g. Git commit hash
+	NextAction   string
+	Confidence   ConfidenceLevel
+}
+
+// Clone returns a deep copy of State to ensure thread safety.
+func (s State) Clone() State {
+	cloned := s
+	if s.Constraints != nil {
+		cloned.Constraints = make([]string, len(s.Constraints))
+		copy(cloned.Constraints, s.Constraints)
+	}
+	if s.Decisions != nil {
+		cloned.Decisions = make([]Decision, len(s.Decisions))
+		copy(cloned.Decisions, s.Decisions)
+	}
+	if s.Completed != nil {
+		cloned.Completed = make([]string, len(s.Completed))
+		copy(cloned.Completed, s.Completed)
+	}
+	if s.Remaining != nil {
+		cloned.Remaining = make([]string, len(s.Remaining))
+		copy(cloned.Remaining, s.Remaining)
+	}
+	if s.Blocked != nil {
+		cloned.Blocked = make([]Blocker, len(s.Blocked))
+		copy(cloned.Blocked, s.Blocked)
+	}
+	if s.DoNotRepeat != nil {
+		cloned.DoNotRepeat = make([]string, len(s.DoNotRepeat))
+		copy(cloned.DoNotRepeat, s.DoNotRepeat)
+	}
+	return cloned
 }
 
 type Decision struct {

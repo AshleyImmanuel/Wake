@@ -37,13 +37,58 @@ type Event struct {
 	Payload   map[string]interface{} `json:"payload"` // Flexible payload depending on EventType
 }
 
-// NewEvent is a helper to create a new event
+// NewEvent is a helper to create a new event with a defensively cloned payload.
 func NewEvent(taskID uuid.UUID, eventType EventType, payload map[string]interface{}) Event {
 	return Event{
 		ID:        uuid.New(),
 		TaskID:    taskID,
 		Type:      eventType,
 		Timestamp: time.Now().UTC(),
-		Payload:   payload,
+		Payload:   ClonePayload(payload),
+	}
+}
+
+// Clone creates a deep copy of the Event to guarantee thread safety.
+func (e Event) Clone() Event {
+	return Event{
+		ID:        e.ID,
+		TaskID:    e.TaskID,
+		Type:      e.Type,
+		Timestamp: e.Timestamp,
+		Payload:   ClonePayload(e.Payload),
+	}
+}
+
+// ClonePayload performs a recursive deep copy of an event payload map.
+func ClonePayload(p map[string]interface{}) map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	cloned := make(map[string]interface{}, len(p))
+	for k, v := range p {
+		cloned[k] = cloneValue(v)
+	}
+	return cloned
+}
+
+func cloneValue(v interface{}) interface{} {
+	if v == nil {
+		return nil
+	}
+	switch val := v.(type) {
+	case map[string]interface{}:
+		return ClonePayload(val)
+	case []interface{}:
+		cp := make([]interface{}, len(val))
+		for i, item := range val {
+			cp[i] = cloneValue(item)
+		}
+		return cp
+	case []string:
+		cp := make([]string, len(val))
+		copy(cp, val)
+		return cp
+	default:
+		return val
 	}
 }

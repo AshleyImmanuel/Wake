@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,6 +36,10 @@ func InitDB(projectRoot string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
+	// SEC-07: Single connection pool configuration prevents SQLITE_BUSY locking in WAL mode
+	db.SetMaxOpenConns(1)
+	db.SetMaxIdleConns(1)
+
 	if err := migrate(db); err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("failed to run migrations: %w", err)
@@ -44,6 +49,12 @@ func InitDB(projectRoot string) (*sql.DB, error) {
 }
 
 func migrate(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin migration transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	queries := []string{
 		`CREATE TABLE IF NOT EXISTS events (
 			id TEXT PRIMARY KEY,
@@ -61,20 +72,40 @@ func migrate(db *sql.DB) error {
 			event_position INTEGER NOT NULL,
 			state_data TEXT NOT NULL, -- JSON representation of State struct
 			repository TEXT DEFAULT '',
-			branch TEXT DEFAULT ''
+			branch TEXT DEFAULT '',
+			UNIQUE(task_id, state_version)
 		);`,
+		`CREATE INDEX IF NOT EXISTS idx_events_task_timestamp ON events (task_id, timestamp ASC);`,
+		`CREATE INDEX IF NOT EXISTS idx_checkpoints_task_timestamp ON checkpoints (task_id, timestamp DESC);`,
+		`CREATE UNIQUE INDEX IF NOT EXISTS idx_checkpoints_task_version ON checkpoints (task_id, state_version);`,
 	}
 
 	for _, query := range queries {
-		if _, err := db.Exec(query); err != nil {
-			return err
+		if _, err := tx.Exec(query); err != nil {
+			return fmt.Errorf("failed to execute migration query %q: %w", query, err)
 		}
 	}
 
 	// Safely add repository and branch columns if table existed without them
-	_, _ = db.Exec(`ALTER TABLE checkpoints ADD COLUMN repository TEXT DEFAULT ''`)
-	_, _ = db.Exec(`ALTER TABLE checkpoints ADD COLUMN branch TEXT DEFAULT ''`)
+	_ = addColumnIfNotExists(tx, "checkpoints", "repository", "TEXT DEFAULT ''")
+	_ = addColumnIfNotExists(tx, "checkpoints", "branch", "TEXT DEFAULT ''")
 
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit migration transaction: %w", err)
+	}
+
+	return nil
+}
+
+func addColumnIfNotExists(tx *sql.Tx, table, column, colDef string) error {
+	query := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", table, column, colDef)
+	_, err := tx.Exec(query)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "duplicate column name") {
+			return nil
+		}
+		return err
+	}
 	return nil
 }
 
@@ -174,12 +205,18 @@ func GetLatestCheckpoint(ctx context.Context, db *sql.DB, taskID string) (*state
 		return nil, fmt.Errorf("failed to scan checkpoint row: %w", err)
 	}
 
-	if parsedID, err := uuid.Parse(idStr); err == nil {
-		cp.ID = parsedID
+	// SEC-12, BUG-07: Explicitly validate and propagate all parsing errors
+	parsedID, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse checkpoint id %q: %w", idStr, err)
 	}
-	if parsedTaskID, err := uuid.Parse(taskIDStr); err == nil {
-		cp.TaskID = parsedTaskID
+	cp.ID = parsedID
+
+	parsedTaskID, err := uuid.Parse(taskIDStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse checkpoint task_id %q: %w", taskIDStr, err)
 	}
+	cp.TaskID = parsedTaskID
 
 	if stateDataStr != "" {
 		if err := json.Unmarshal([]byte(stateDataStr), &cp.StateData); err != nil {
@@ -245,22 +282,33 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 			return nil, fmt.Errorf("failed to scan event row: %w", err)
 		}
 
-		if parsedID, err := uuid.Parse(idStr); err == nil {
-			e.ID = parsedID
+		// SEC-12, BUG-07: Explicitly validate and propagate all parsing errors
+		parsedID, err := uuid.Parse(idStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse event id %q: %w", idStr, err)
 		}
-		if parsedTaskID, err := uuid.Parse(taskIDStr); err == nil {
-			e.TaskID = parsedTaskID
-		}
-		e.Type = events.EventType(typeStr)
-		if parsedTime, err := time.Parse(time.RFC3339, timeStr); err == nil {
-			e.Timestamp = parsedTime
-		}
+		e.ID = parsedID
 
-		if payloadStr != "" {
+		parsedTaskID, err := uuid.Parse(taskIDStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse event task_id %q: %w", taskIDStr, err)
+		}
+		e.TaskID = parsedTaskID
+
+		e.Type = events.EventType(typeStr)
+
+		parsedTime, err := parseTimestamp(timeStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse event timestamp %q: %w", timeStr, err)
+		}
+		e.Timestamp = parsedTime
+
+		if payloadStr != "" && payloadStr != "null" {
 			var payload map[string]interface{}
-			if err := json.Unmarshal([]byte(payloadStr), &payload); err == nil {
-				e.Payload = payload
+			if err := json.Unmarshal([]byte(payloadStr), &payload); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal event payload: %w", err)
 			}
+			e.Payload = payload
 		}
 
 		result = append(result, e)
@@ -271,5 +319,21 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 	}
 
 	return result, nil
+}
+
+func parseTimestamp(s string) (time.Time, error) {
+	if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse(time.RFC3339, s); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+		return t, nil
+	}
+	if t, err := time.Parse("2006-01-02T15:04:05", s); err == nil {
+		return t, nil
+	}
+	return time.Time{}, fmt.Errorf("invalid timestamp format: %q", s)
 }
 
