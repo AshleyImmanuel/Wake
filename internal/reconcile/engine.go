@@ -348,7 +348,7 @@ func normalizePath(p string) string {
 // isInternalMetadataPath identifies Sentinel and Git internal working files.
 func isInternalMetadataPath(p string) bool {
 	p = normalizePath(p)
-	if strings.HasPrefix(p, ".sentinel/") || p == ".sentinel" || strings.HasPrefix(p, ".git/") || p == ".git" {
+	if strings.HasPrefix(p, ".wake/") || p == ".wake" || strings.HasPrefix(p, ".git/") || p == ".git" {
 		return true
 	}
 	return false

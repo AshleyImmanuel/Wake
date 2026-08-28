@@ -16,21 +16,21 @@ import (
 )
 
 // InitDB connects to the SQLite database and runs migrations.
-// It assumes the DB file is located in the .sentinel directory of the project root.
+// It assumes the DB file is located in the .wake directory of the project root.
 func InitDB(projectRoot string) (*sql.DB, error) {
-	sentinelDir := filepath.Join(projectRoot, ".sentinel")
-	if err := os.MkdirAll(sentinelDir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create sentinel directory: %w", err)
+	wakeDir := filepath.Join(projectRoot, ".wake")
+	if err := os.MkdirAll(wakeDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create .wake directory: %w", err)
 	}
 
-	gitignorePath := filepath.Join(sentinelDir, ".gitignore")
+	// Create a .gitignore file in the .wake directory to ignore the database
+	gitignorePath := filepath.Join(wakeDir, ".gitignore")
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
 		_ = os.WriteFile(gitignorePath, []byte("*\n"), 0644)
 	}
 
-	dbPath := filepath.Join(sentinelDir, "state.db")
-
-	db, err := sql.Open("sqlite", dbPath)
+	dsn := filepath.Join(wakeDir, "state.db") + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
