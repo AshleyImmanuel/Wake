@@ -7,7 +7,7 @@
   <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
   
   [![Go Report Card](https://goreportcard.com/badge/github.com/AshleyImmanuel/Wake)](https://goreportcard.com/report/github.com/AshleyImmanuel/Wake)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
   [![Version](https://img.shields.io/badge/Version-v1.0--beta-green.svg)]()
 </div>
 
@@ -89,5 +89,8 @@ Wake is built entirely in Go for maximum performance and cross-platform binary d
 - `internal/state/`: The State Reducer that collapses the event log into a single Point-in-Time snapshot.
 - `internal/reconcile/`: The engine that diffs the SQLite Checkpoint against the live `git` status.
 
-## License
-MIT License. See [LICENSE](LICENSE) for more information.
+## Copyright & License
+
+**Copyright (c) 2026 Ashley Immanuel. All Rights Reserved.**
+
+This software is proprietary. You may not use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software without express written permission. See the [LICENSE](LICENSE) file for more information.
