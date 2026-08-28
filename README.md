@@ -91,14 +91,15 @@ wake resume
 
 If you are using the **Antigravity CLI**, Wake integrates natively. Simply copy the `hooks.json` file into your project's `.agents/` folder. Every time your AI writes a file, Wake will automatically save a checkpoint in the background.
 
-## Comparison to Existing Tools
+## Synergy with Existing Tools
 
-| Tool | Approach | Handles Human Code Interference? | Cost / Hosting |
-|------|----------|----------------------------------|----------------|
-| **Wake** | Local Git-Reconciliation & Event Ledger | **Yes (Catches STALE/CONFLICTs)** | Free / Local |
-| **Devin / Cloud Agents** | Persistent Cloud VMs | No (Assumes it owns the VM) | High / Cloud |
-| **LangGraph / Checkpointers** | Python State-Graph Storage | No (Unaffiliated with Git) | Free / Local |
-| **Cursor / Aider** | Repo Maps & Vector Search | No (Reads files, but forgets constraints) | Subscriptions |
+Wake is built to **complement**, not replace, the incredible tools already pushing the industry forward:
+
+| Tool | Core Strength | How Wake Synergizes With It |
+|------|---------------|-----------------------------|
+| **LangGraph / Checkpointers** | World-class Python state-graph execution. | Wake adds Git-level physical file reconciliation to LangGraph's internal memory states. |
+| **Cursor / Aider** | Industry-leading IDE and codebase semantic search. | Wake acts as a background "save state" adapter to persist their strict constraints across terminal reboots. |
+| **Devin / Cloud Agents** | Autonomous execution in persistent cloud environments. | Wake provides a local-first alternative for developers who want similar state-persistence without leaving their local laptop. |
 
 ## Architecture
 
