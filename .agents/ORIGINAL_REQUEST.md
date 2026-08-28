@@ -96,3 +96,12 @@ Design and implement integration wrappers (such as an official MCP server, gener
 ### Integration Verification
 - [ ] A functioning MCP (Model Context Protocol) server for Wake is implemented and successfully exposes the Wake API to external IDEs/agents.
 
+## Follow-up — 2026-08-28T21:35:00Z
+
+[URGENT ZERO-DAY DISCOVERY from User]: The user just exploited a critical architectural vulnerability in the Wake wrapper. 
+
+Vulnerability: If a human modifies a file in the working tree *while* the AI is running a tool, and the AI subsequently runs `wake checkpoint`, Wake currently accepts the checkpoint and locks the human's unreviewed code into the baseline memory. The wrapper fails to protect the state from the AI's own blind commits.
+
+Directive: You must immediately implement a "Pre-Checkpoint Guard" in the core Go engine. When `wake checkpoint` is called, it MUST verify that no un-tracked or human-modified files are being blindly scooped into the checkpoint. If it detects unreviewed changes, it must return a fatal error and refuse to checkpoint. Implement this as part of Milestone 2.
+
+

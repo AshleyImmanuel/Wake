@@ -1,7 +1,7 @@
-# Project Sentinel
+# Project Wake
 ## Product Requirements Document — v0.3
 
-**Working name:** Sentinel  
+**Working name:** Wake  
 **Product category:** AI coding-agent recovery infrastructure  
 **Status:** Pre-MVP / validation stage  
 **Date:** August 28, 2026
@@ -10,9 +10,9 @@
 
 # 1. Product Definition
 
-Sentinel is a plug-and-play layer for existing AI coding agents that reconstructs and restores the **current executable state of a coding task** after a context or session transition.
+Wake is a plug-and-play layer for existing AI coding agents that reconstructs and restores the **current executable state of a coding task** after a context or session transition.
 
-Sentinel does not replace:
+Wake does not replace:
 
 - the IDE
 - the coding agent
@@ -22,7 +22,7 @@ Sentinel does not replace:
 - testing systems
 - observability platforms
 
-Sentinel exists specifically to answer:
+Wake exists specifically to answer:
 
 > **“What state is this coding task actually in right now, and can a new agent session safely continue from it?”**
 
@@ -75,49 +75,49 @@ The result can be:
 
 > **Existing agent context mechanisms preserve knowledge and instructions, but they do not guarantee accurate reconstruction of the live execution state of an interrupted coding task.**
 
-Sentinel is designed around this gap.
+Wake is designed around this gap.
 
 ---
 
-# 4. What Sentinel Is Not
+# 4. What Wake Is Not
 
 This distinction is mandatory.
 
-## Sentinel is NOT an AI memory system.
+## Wake is NOT an AI memory system.
 
 Memory answers:
 
 > “What information should the agent retain?”
 
-Sentinel answers:
+Wake answers:
 
 > “What state must be restored for this task to continue correctly?”
 
-## Sentinel is NOT an `AGENTS.md` replacement.
+## Wake is NOT an `AGENTS.md` replacement.
 
 `AGENTS.md` describes rules and persistent project instructions.
 
-Sentinel records the evolving state of a specific task.
+Wake records the evolving state of a specific task.
 
-## Sentinel is NOT a plan manager.
+## Wake is NOT a plan manager.
 
 A plan says what should happen.
 
-Sentinel tracks what has actually happened.
+Wake tracks what has actually happened.
 
-## Sentinel is NOT observability.
+## Wake is NOT observability.
 
 Observability records activity.
 
-Sentinel turns relevant activity into recoverable task state.
+Wake turns relevant activity into recoverable task state.
 
-## Sentinel is NOT a code reviewer.
+## Wake is NOT a code reviewer.
 
 It does not primarily judge code quality.
 
-## Sentinel is NOT a browser tester.
+## Wake is NOT a browser tester.
 
-Testing can provide evidence to Sentinel, but browser testing itself is outside the core product.
+Testing can provide evidence to Wake, but browser testing itself is outside the core product.
 
 ---
 
@@ -152,7 +152,7 @@ A developer starts:
 
 An agent works for several hours.
 
-Before the session ends, Sentinel has:
+Before the session ends, Wake has:
 
 ```text
 TASK
@@ -196,7 +196,7 @@ The session ends.
 
 The developer starts a new session.
 
-Instead of making the agent rediscover everything, Sentinel performs state recovery.
+Instead of making the agent rediscover everything, Wake performs state recovery.
 
 ---
 
@@ -228,11 +228,11 @@ Resume agent
 
 # 8. Core Components
 
-Sentinel MVP consists of five major components.
+Wake MVP consists of five major components.
 
 ## 8.1 Agent Adapter
 
-Connects Sentinel to an existing coding-agent environment.
+Connects Wake to an existing coding-agent environment.
 
 Responsibilities:
 
@@ -275,7 +275,7 @@ SESSION_INTERRUPTED
 SESSION_RESUMED
 ```
 
-Sentinel must avoid treating every conversational message as important state.
+Wake must avoid treating every conversational message as important state.
 
 ---
 
@@ -416,7 +416,7 @@ CONFLICT
 → require reconciliation
 ```
 
-Sentinel must prefer uncertainty over silently resuming from incorrect state.
+Wake must prefer uncertainty over silently resuming from incorrect state.
 
 ---
 
@@ -464,13 +464,13 @@ Webhook implementation is probably complete.
 
 Insufficient information.
 
-This prevents Sentinel from turning previous agent guesses into permanent facts.
+This prevents Wake from turning previous agent guesses into permanent facts.
 
 ---
 
 # 11. Checkpoint Design
 
-Sentinel should checkpoint **state transitions**, not every event.
+Wake should checkpoint **state transitions**, not every event.
 
 Recommended triggers:
 
@@ -489,7 +489,7 @@ Recommended triggers:
 
 # 12. Recovery Packet
 
-On resume, Sentinel should create a compact recovery packet.
+On resume, Wake should create a compact recovery packet.
 
 Example:
 
@@ -533,7 +533,7 @@ The recovery packet should be much smaller than replaying an entire session.
 
 # 13. Recovery Must Be State-First
 
-Sentinel should not tell a new agent:
+Wake should not tell a new agent:
 
 > “Here is a giant summary of the previous conversation.”
 
@@ -557,7 +557,7 @@ This reduces dependence on raw conversational history.
 
 # 14. Repository Reconciliation
 
-Before recovery, Sentinel should compare:
+Before recovery, Wake should compare:
 
 ### Git
 
@@ -616,7 +616,7 @@ SAFE WITH UPDATES
 
 # 15. Do-Not-Repeat Mechanism
 
-Sentinel should explicitly record completed work that should not normally be repeated.
+Wake should explicitly record completed work that should not normally be repeated.
 
 Example:
 
@@ -630,7 +630,7 @@ DO NOT REPEAT
 
 This is not a rigid prohibition.
 
-If repository reconciliation shows that the migration has become invalid, Sentinel should downgrade the claim:
+If repository reconciliation shows that the migration has become invalid, Wake should downgrade the claim:
 
 ```text
 Previous:
@@ -719,18 +719,18 @@ The MVP should be lightweight.
 ## CLI
 
 ```bash
-sentinel run
-sentinel status
-sentinel checkpoint
-sentinel history
-sentinel resume
-sentinel inspect
+Wake run
+Wake status
+Wake checkpoint
+Wake history
+Wake resume
+Wake inspect
 ```
 
 Example:
 
 ```text
-$ sentinel status
+$ Wake status
 
 TASK
 Stripe subscriptions
@@ -754,7 +754,7 @@ Consistent
 Resume:
 
 ```bash
-sentinel resume
+Wake resume
 ```
 
 ---
@@ -772,7 +772,7 @@ Existing IDE
    ↓
 Existing AI agent
    ↓
-Sentinel
+Wake
 ```
 
 The developer should not need to migrate their project into another development environment.
@@ -824,7 +824,7 @@ Cloud synchronization is deferred.
 
 # 22. Security
 
-Sentinel may observe source-code and command activity.
+Wake may observe source-code and command activity.
 
 Therefore:
 
@@ -920,7 +920,7 @@ Benefits:
 "The project uses PostgreSQL."
 ```
 
-### Sentinel state
+### Wake state
 
 ```text
 Task:
@@ -947,7 +947,7 @@ Fix webhook conversion
 
 Memory stores knowledge.
 
-Sentinel stores **task execution state**.
+Wake stores **task execution state**.
 
 ---
 
@@ -962,7 +962,7 @@ Plans
 Requirements
 ```
 
-Sentinel additionally tracks:
+Wake additionally tracks:
 
 ```text
 What happened during this execution?
@@ -982,7 +982,7 @@ What evidence supports completion?
 What is still safe to continue?
 ```
 
-Sentinel may eventually use files such as `AGENTS.md`, `spec.md`, or plan documents as inputs during reconciliation, but it does not attempt to replace them.
+Wake may eventually use files such as `AGENTS.md`, `spec.md`, or plan documents as inputs during reconciliation, but it does not attempt to replace them.
 
 ---
 
@@ -992,7 +992,7 @@ Logs answer:
 
 > “What happened?”
 
-Sentinel answers:
+Wake answers:
 
 > “Given what happened, what is the current recoverable state of this task?”
 
@@ -1067,7 +1067,7 @@ Compare:
 
 versus
 
-**Agent + Sentinel**
+**Agent + Wake**
 
 Measure:
 
@@ -1128,7 +1128,7 @@ Do not proceed to a full startup build unless the benchmark shows a meaningful a
 Proceed when:
 
 - existing agents exhibit reproducible recovery failures
-- Sentinel materially improves recovery accuracy
+- Wake materially improves recovery accuracy
 - repeated work decreases significantly
 - users report meaningful time savings
 - one integration is technically practical
@@ -1138,7 +1138,7 @@ Proceed when:
 Stop or redesign if:
 
 - current agents already recover reliably
-- Sentinel cannot improve outcomes
+- Wake cannot improve outcomes
 - checkpoint state becomes less reliable than native mechanisms
 - integration requires invasive changes
 - users do not perceive meaningful value
@@ -1226,7 +1226,7 @@ These can be reconsidered only after the core recovery problem is validated.
 
 # 35. Future Direction
 
-If the core recovery layer proves valuable, Sentinel could eventually evolve toward:
+If the core recovery layer proves valuable, Wake could eventually evolve toward:
 
 ```text
 Task State
@@ -1248,7 +1248,7 @@ The company should initially own one problem.
 
 # 36. Final Product Statement
 
-> **Sentinel is a plug-and-play recovery layer for AI coding agents that maintains evidence-backed execution state and reconciles it with the current repository so interrupted or context-reset tasks can resume safely without forcing developers to reconstruct the work manually.**
+> **Wake is a plug-and-play recovery layer for AI coding agents that maintains evidence-backed execution state and reconciles it with the current repository so interrupted or context-reset tasks can resume safely without forcing developers to reconstruct the work manually.**
 
 ---
 
@@ -1258,4 +1258,42 @@ The entire product depends on one hypothesis:
 
 > **When long-running AI coding tasks cross context or session boundaries, existing memory, instruction, planning, and resume mechanisms can still leave the next session without a reliable representation of the task's actual execution state. A dedicated state-reconciliation and recovery layer can reduce incorrect continuation, repeated work, and developer intervention.**
 
-That hypothesis must be experimentally validated before Sentinel expands beyond this single problem.
+That hypothesis must be experimentally validated before Wake expands beyond this single problem.
+
+---
+
+# 38. v1.1 Amendments — Discovered During Live Pressure Testing
+
+The following architectural requirements were discovered during adversarial human pressure testing of the v1.0-beta engine.
+
+## 38.1 Pre-Checkpoint Guard
+
+**Discovery:** An AI agent can blindly run `wake checkpoint` and accidentally lock unreviewed human modifications into the baseline memory, defeating the purpose of the safety net.
+
+**Requirement:** Before any checkpoint is saved, the engine must scan the working tree for uncommitted changes that were not authored by the AI. If detected, the checkpoint must be blocked and a fatal error returned.
+
+## 38.2 Git-less File Hashing Engine
+
+**Discovery:** Requiring Git as a dependency excludes a large percentage of potential users (beginners, data scientists, non-technical founders).
+
+**Requirement:** Wake must support a fallback mode that uses SHA-256 file hashing to detect human modifications on the local file system without requiring Git to be installed.
+
+## 38.3 Author Attribution Markers
+
+**Discovery:** When Wake flags a file as modified, it cannot distinguish whether the Human or the AI made the change, leading to false blame attribution.
+
+**Requirement:** The Wake IDE extension / MCP server must tag each file save with an attribution marker (`HUMAN_MODIFIED` or `AI_MODIFIED`) so the reconciliation report can explicitly identify who touched what.
+
+## 38.4 Continuous Recovery Stashing
+
+**Discovery:** If a human edits a file and the AI subsequently overwrites it with `write_to_file` before a checkpoint is taken, the human's code is permanently destroyed with no recovery path.
+
+**Requirement:** The Wake IDE extension must continuously monitor file saves. If it detects that an AI tool overwrote a file containing uncommitted human modifications, it must automatically stash the human's version into `.wake/recovery_stash/` before the overwrite completes.
+
+## 38.5 Write-Write Conflict Detection
+
+**Discovery:** If a human and an AI edit the same file at the same millisecond, the AI's `write_to_file` tool will silently destroy the human's work without any warning.
+
+**Requirement:** AI tool integrations should implement optimistic concurrency control. Before overwriting a file, the tool must check the file's last-modified timestamp against its expected value. If the timestamp has changed, the write must abort.
+
+---
