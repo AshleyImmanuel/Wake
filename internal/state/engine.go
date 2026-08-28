@@ -16,6 +16,10 @@ func Reduce(taskID string, history []events.Event) State {
 		Confidence:  ConfidenceHigh,
 	}
 
+	// Use maps for deduplication
+	constraintSet := make(map[string]bool)
+	completedSet := make(map[string]bool)
+
 	for _, e := range history {
 		switch e.Type {
 		case events.TaskStarted:
@@ -25,7 +29,10 @@ func Reduce(taskID string, history []events.Event) State {
 
 		case events.ConstraintAdded:
 			if constraint, ok := e.Payload["constraint"].(string); ok {
-				currentState.Constraints = append(currentState.Constraints, constraint)
+				if !constraintSet[constraint] {
+					constraintSet[constraint] = true
+					currentState.Constraints = append(currentState.Constraints, constraint)
+				}
 			}
 
 		case events.DecisionMade:
@@ -42,7 +49,10 @@ func Reduce(taskID string, history []events.Event) State {
 
 		case events.MilestoneCompleted:
 			if milestone, ok := e.Payload["milestone"].(string); ok {
-				currentState.Completed = append(currentState.Completed, milestone)
+				if !completedSet[milestone] {
+					completedSet[milestone] = true
+					currentState.Completed = append(currentState.Completed, milestone)
+				}
 			}
 
 		case events.BlockerCreated:
@@ -57,12 +67,14 @@ func Reduce(taskID string, history []events.Event) State {
 
 		case events.BlockerResolved:
 			if id, ok := e.Payload["id"].(string); ok {
-				// Find and mark resolved
-				for i, b := range currentState.Blocked {
-					if b.ID == id {
-						currentState.Blocked[i].Status = "RESOLVED"
+				// Filter out the resolved blocker entirely to save tokens
+				var activeBlockers []Blocker
+				for _, b := range currentState.Blocked {
+					if b.ID != id {
+						activeBlockers = append(activeBlockers, b)
 					}
 				}
+				currentState.Blocked = activeBlockers
 			}
 
 		case events.GitCommit:
