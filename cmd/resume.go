@@ -1,15 +1,15 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/spf13/cobra"
 	"github.com/wake/wake/internal/db"
 	"github.com/wake/wake/internal/git"
 	"github.com/wake/wake/internal/reconcile"
-	"github.com/spf13/cobra"
+	"github.com/wake/wake/internal/service"
 )
 
 var (
@@ -22,114 +22,109 @@ var resumeCmd = &cobra.Command{
 	Short: "Generate a compact recovery packet for a new agent session",
 	Long:  "Creates a Recovery Packet containing the latest state, the repository delta, and instructions for how the AI should continue.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runResume(cmd.Context(), resumeDir, resumeTaskID)
-	},
-}
+		targetDir := resumeDir
+		if targetDir == "" {
+			var err error
+			targetDir, err = os.Getwd()
+			if err != nil {
+				return fmt.Errorf("failed to get current directory: %w", err)
+			}
+		}
 
-func runResume(ctx context.Context, targetDir, taskIDStr string) error {
-	if targetDir == "" {
-		var err error
-		targetDir, err = os.Getwd()
+		gitClient := git.NewClient(nil)
+		repoRoot, err := gitClient.GetRepoRoot(cmd.Context(), targetDir)
 		if err != nil {
-			return fmt.Errorf("failed to get current directory: %w", err)
+			return fmt.Errorf("git repository not found: %w", err)
 		}
-	}
 
-	gitClient := git.NewClient(nil)
-	repoRoot, err := gitClient.GetRepoRoot(ctx, targetDir)
-	if err != nil {
-		return fmt.Errorf("git repository not found: %w", err)
-	}
-
-	database, err := db.InitDB(repoRoot)
-	if err != nil {
-		return fmt.Errorf("failed to init db: %w", err)
-	}
-	defer database.Close()
-
-	cp, err := db.GetLatestCheckpoint(ctx, database, taskIDStr)
-	if err != nil {
-		return fmt.Errorf("could not find latest checkpoint: %w", err)
-	}
-
-	result, err := reconcile.ReconcileRepo(ctx, *cp, gitClient, repoRoot, nil)
-	if err != nil {
-		return fmt.Errorf("reconciliation failed: %w", err)
-	}
-
-	fmt.Println("======================================================================")
-	fmt.Printf("RESUMING TASK: %s\n", cp.TaskID.String())
-	fmt.Println("======================================================================")
-
-	if cp.StateData.Objective != "" {
-		fmt.Printf("\nGOAL\n%s\n", cp.StateData.Objective)
-	}
-
-	if len(cp.StateData.Completed) > 0 {
-		fmt.Println("\nCOMPLETED")
-		for _, c := range cp.StateData.Completed {
-			fmt.Printf("✓ %s\n", c)
+		database, err := db.InitDB(repoRoot)
+		if err != nil {
+			return fmt.Errorf("failed to init db: %w", err)
 		}
-	}
+		defer database.Close()
 
-	if cp.StateData.Current != "" {
-		fmt.Printf("\nCURRENT\n%s\n", cp.StateData.Current)
-	}
+		svc := service.NewTaskService(database, gitClient)
+		packet, err := svc.ResumeTask(cmd.Context(), resumeTaskID)
+		if err != nil {
+			return err
+		}
 
-	activeBlockers := 0
-	for _, b := range cp.StateData.Blocked {
-		if b.Status == "ACTIVE" {
-			if activeBlockers == 0 {
-				fmt.Println("\nBLOCKERS")
+		cp := packet.Checkpoint
+		result := packet.ReconciliationResult
+
+		fmt.Println("======================================================================")
+		fmt.Printf("RESUMING TASK: %s\n", cp.TaskID.String())
+		fmt.Println("======================================================================")
+
+		if cp.StateData.Objective != "" {
+			fmt.Printf("\nGOAL\n%s\n", cp.StateData.Objective)
+		}
+
+		if len(cp.StateData.Completed) > 0 {
+			fmt.Println("\nCOMPLETED")
+			for _, c := range cp.StateData.Completed {
+				fmt.Printf("✓ %s\n", c)
 			}
-			fmt.Printf("[!] %s: %s\n", b.ID, b.Description)
-			activeBlockers++
 		}
-	}
 
-	if len(cp.StateData.Constraints) > 0 {
-		fmt.Println("\nCONSTRAINTS")
-		for _, c := range cp.StateData.Constraints {
-			fmt.Printf("- %s\n", c)
+		if cp.StateData.Current != "" {
+			fmt.Printf("\nCURRENT\n%s\n", cp.StateData.Current)
 		}
-	}
 
-	if len(cp.StateData.DoNotRepeat) > 0 {
-		fmt.Println("\nDO NOT REPEAT")
-		for _, c := range cp.StateData.DoNotRepeat {
-			fmt.Printf("- %s\n", c)
+		activeBlockers := 0
+		for _, b := range cp.StateData.Blocked {
+			if b.Status == "ACTIVE" {
+				if activeBlockers == 0 {
+					fmt.Println("\nBLOCKERS")
+				}
+				fmt.Printf("[!] %s: %s\n", b.ID, b.Description)
+				activeBlockers++
+			}
 		}
-	}
 
-	fmt.Printf("\nLAST VERIFIED\nCommit %s\n", cp.Commit)
-	
-	if cp.StateData.NextAction != "" {
-		fmt.Printf("\nNEXT ACTION\n%s\n", cp.StateData.NextAction)
-	}
+		if len(cp.StateData.Constraints) > 0 {
+			fmt.Println("\nCONSTRAINTS")
+			for _, c := range cp.StateData.Constraints {
+				fmt.Printf("- %s\n", c)
+			}
+		}
 
-	fmt.Printf("\nSTATE CONFIDENCE\n%s\n", result.ConfidenceLevel)
+		if len(cp.StateData.DoNotRepeat) > 0 {
+			fmt.Println("\nDO NOT REPEAT")
+			for _, c := range cp.StateData.DoNotRepeat {
+				fmt.Printf("- %s\n", c)
+			}
+		}
 
-	fmt.Println("\n--- CURRENT REPOSITORY DELTA ---")
-	if result.Status == reconcile.StatusSafe {
-		fmt.Println("No modifications since last checkpoint. Safe to resume from Next Action.")
-	} else {
-		fmt.Printf("Status: %s\n", result.Status)
+		fmt.Printf("\nLAST VERIFIED\nCommit %s\n", cp.Commit)
 		
-		if strings.Contains(result.Reason, "merge conflicts") {
-			fmt.Println("\nCRITICAL RECOVERY INSTRUCTION: The repository is in a broken Git merge state. You must resolve the merge conflicts using `git merge --continue` or `git rebase --continue` before you do any other work.")
-		} else if !result.BranchMatch {
-			fmt.Printf("\nCRITICAL RECOVERY INSTRUCTION: You are on branch '%s', but the checkpoint was saved on branch '%s'. You must run `git checkout %s` before continuing to avoid corrupting the state.\n", result.CurrentCommit, cp.Branch, cp.Branch)
-		} else if len(result.ChangedFiles) > 0 {
-			fmt.Println("The following files have changed since the AI paused:")
-			for _, f := range result.ChangedFiles {
-				fmt.Printf(" - %s\n", f)
-			}
-			fmt.Println("\nRECOVERY INSTRUCTION: Read the changed files above before continuing to ensure your context is completely up-to-date.")
+		if cp.StateData.NextAction != "" {
+			fmt.Printf("\nNEXT ACTION\n%s\n", cp.StateData.NextAction)
 		}
-	}
-	fmt.Println("======================================================================")
 
-	return nil
+		fmt.Printf("\nSTATE CONFIDENCE\n%s\n", result.ConfidenceLevel)
+
+		fmt.Println("\n--- CURRENT REPOSITORY DELTA ---")
+		if result.Status == reconcile.StatusSafe {
+			fmt.Println("No modifications since last checkpoint. Safe to resume from Next Action.")
+		} else {
+			fmt.Printf("Status: %s\n", result.Status)
+			
+			if packet.Guidance != "" {
+				// We still print the changed files if there's any
+				if !strings.Contains(packet.Guidance, "CRITICAL") && len(result.ChangedFiles) > 0 {
+					fmt.Println("The following files have changed since the AI paused:")
+					for _, f := range result.ChangedFiles {
+						fmt.Printf(" - %s\n", f)
+					}
+				}
+				fmt.Printf("\n%s\n", packet.Guidance)
+			}
+		}
+		fmt.Println("======================================================================")
+
+		return nil
+	},
 }
 
 func init() {
