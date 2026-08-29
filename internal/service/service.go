@@ -26,18 +26,25 @@ type TaskService interface {
 	UpdateObjective(ctx context.Context, taskID string, objective string) error
 	RecordEvent(ctx context.Context, taskID string, eventType events.EventType, payload map[string]interface{}) (*events.Event, error)
 	InitWorkspace(ctx context.Context, dir string) error
+	SetAuthor(author string)
 }
 
 type taskService struct {
 	db        *sql.DB
 	gitClient git.Client
+	author    string
 }
 
 func NewTaskService(database *sql.DB, gitClient git.Client) TaskService {
 	return &taskService{
 		db:        database,
 		gitClient: gitClient,
+		author:    "Human CLI",
 	}
+}
+
+func (s *taskService) SetAuthor(author string) {
+	s.author = author
 }
 
 func (s *taskService) getRepoRoot(ctx context.Context, dir string) (string, error) {
@@ -75,7 +82,7 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 		return nil, fmt.Errorf("pre-checkpoint guard blocked checkpoint: %w", err)
 	}
 
-	var taskID uuid.UUID
+	var parsedTaskID uuid.UUID
 	var stateVersion int = 1
 	var currentState state.State
 
@@ -84,34 +91,34 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 		if err != nil {
 			return nil, fmt.Errorf("invalid task-id '%s': %w", req.TaskID, err)
 		}
-		taskID = parsed
+		parsedTaskID = parsed
 	}
 
 	queryID := ""
-	if taskID != uuid.Nil {
-		queryID = taskID.String()
+	if parsedTaskID != uuid.Nil {
+		queryID = parsedTaskID.String()
 	}
 	latestCP, err := db.GetLatestCheckpoint(ctx, s.db, queryID)
 	if err == nil && latestCP != nil {
-		if taskID == uuid.Nil {
-			taskID = latestCP.TaskID
+		if parsedTaskID == uuid.Nil {
+			parsedTaskID = latestCP.TaskID
 		}
 		stateVersion = latestCP.StateVersion + 1
 		currentState = latestCP.StateData
-	} else if taskID == uuid.Nil {
-		taskID = uuid.New()
+	} else if parsedTaskID == uuid.Nil {
+		parsedTaskID = uuid.New()
 	}
 
-	history, err := db.GetEvents(ctx, s.db, taskID.String())
+	history, err := db.GetEvents(ctx, s.db, parsedTaskID.String())
 	if err == nil && len(history) > 0 {
-		reduced := state.Reduce(taskID.String(), history)
+		reduced := state.Reduce(parsedTaskID.String(), history)
 		currentState = reduced
 	}
 
 	if req.Objective != "" {
 		currentState.Objective = req.Objective
 	}
-	currentState.TaskID = taskID
+	currentState.TaskID = parsedTaskID
 	currentState.LastVerified = repoState.CommitHash
 
 	// Track files locally if no git commit
@@ -121,7 +128,7 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 		}
 	}
 
-	commitEv := events.NewEvent(taskID, events.GitCommit, map[string]interface{}{
+	commitEv := events.NewEvent(parsedTaskID, events.GitCommit, s.author, map[string]interface{}{
 		"hash":   repoState.CommitHash,
 		"branch": repoState.Branch,
 		"clean":  repoState.IsClean,
@@ -130,11 +137,12 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 
 	cp := state.Checkpoint{
 		ID:            uuid.New(),
-		TaskID:        taskID,
+		TaskID:        parsedTaskID,
 		Timestamp:     time.Now().UTC().Format(time.RFC3339),
 		Repository:    repoState.RootPath,
 		Branch:        repoState.Branch,
 		Commit:        repoState.CommitHash,
+		Author:        s.author,
 		StateVersion:  stateVersion,
 		EventPosition: len(history) + 1,
 		StateData:     currentState,
@@ -226,7 +234,7 @@ func (s *taskService) UpdateObjective(ctx context.Context, taskID string, object
 		return fmt.Errorf("no active task found to update")
 	}
 
-	ev := events.NewEvent(cp.TaskID, events.TaskStarted, map[string]interface{}{
+	ev := events.NewEvent(cp.TaskID, events.TaskStarted, s.author, map[string]interface{}{
 		"objective": objective,
 		"note":      "Human manually pivoted the objective",
 	})
@@ -239,25 +247,29 @@ func (s *taskService) UpdateObjective(ctx context.Context, taskID string, object
 }
 
 func (s *taskService) RecordEvent(ctx context.Context, taskID string, eventType events.EventType, payload map[string]interface{}) (*events.Event, error) {
-	var tid uuid.UUID
+	var parsedTaskID uuid.UUID
 	if taskID != "" {
 		parsed, err := uuid.Parse(taskID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid task ID: %w", err)
 		}
-		tid = parsed
+		parsedTaskID = parsed
 	} else {
 		cp, err := db.GetLatestCheckpoint(ctx, s.db, "")
 		if err == nil {
-			tid = cp.TaskID
-		} else {
-			tid = uuid.New()
+			parsedTaskID = cp.TaskID
 		}
 	}
+	if parsedTaskID == uuid.Nil {
+		parsedTaskID = uuid.New()
+	}
 
-	ev := events.NewEvent(tid, eventType, payload)
-	if err := db.SaveEvent(ctx, s.db, ev); err != nil {
-		return nil, err
+	ev := events.NewEvent(parsedTaskID, eventType, s.author, payload)
+
+	if s.db != nil {
+		if err := db.SaveEvent(ctx, s.db, ev); err != nil {
+			return nil, err
+		}
 	}
 	return &ev, nil
 }

@@ -33,16 +33,18 @@ type Event struct {
 	ID        uuid.UUID              `json:"id"`
 	TaskID    uuid.UUID              `json:"task_id"`
 	Type      EventType              `json:"type"`
+	Author    string                 `json:"author"`
 	Timestamp time.Time              `json:"timestamp"`
 	Payload   map[string]interface{} `json:"payload"` // Flexible payload depending on EventType
 }
 
 // NewEvent is a helper to create a new event with a defensively cloned payload.
-func NewEvent(taskID uuid.UUID, eventType EventType, payload map[string]interface{}) Event {
+func NewEvent(taskID uuid.UUID, eventType EventType, author string, payload map[string]interface{}) Event {
 	return Event{
 		ID:        uuid.New(),
 		TaskID:    taskID,
 		Type:      eventType,
+		Author:    author,
 		Timestamp: time.Now().UTC(),
 		Payload:   ClonePayload(payload),
 	}
@@ -54,6 +56,7 @@ func (e Event) Clone() Event {
 		ID:        e.ID,
 		TaskID:    e.TaskID,
 		Type:      e.Type,
+		Author:    e.Author,
 		Timestamp: e.Timestamp,
 		Payload:   ClonePayload(e.Payload),
 	}
