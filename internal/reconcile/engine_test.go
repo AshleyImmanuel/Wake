@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/wake/wake/internal/git"
-	"github.com/wake/wake/internal/state"
+	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/state"
 )
 
 func TestReconcile(t *testing.T) {

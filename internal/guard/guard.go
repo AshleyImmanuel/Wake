@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/wake/wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/git"
 )
 
 var ErrUnreviewedChanges = errors.New("unreviewed human modifications detected in working tree")
@@ -83,7 +83,7 @@ func ValidatePreCheckpoint(ctx context.Context, repoState *git.RepositoryState, 
 		violation.HasMergeConflicts = true
 	}
 
-	// Filter untracked files (ignoring Wake, Sentinel, and Git metadata)
+	// Filter untracked files (ignoring Wake and Git metadata)
 	for _, u := range repoState.UntrackedFiles {
 		clean := normalizePath(u)
 		if clean != "" && !isInternalMetadataPath(clean) {
@@ -186,7 +186,6 @@ func isInternalMetadataPath(p string) bool {
 	}
 	lower := strings.ToLower(p)
 	if strings.HasPrefix(lower, ".wake/") || lower == ".wake" ||
-		strings.HasPrefix(lower, ".sentinel/") || lower == ".sentinel" ||
 		strings.HasPrefix(lower, ".git/") || lower == ".git" {
 		return true
 	}

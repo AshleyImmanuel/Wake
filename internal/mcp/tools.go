@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/wake/wake/internal/events"
-	"github.com/wake/wake/internal/service"
+	"github.com/AshleyImmanuel/Wake/internal/events"
+	"github.com/AshleyImmanuel/Wake/internal/service"
 )
 
 func getTools() []Tool {

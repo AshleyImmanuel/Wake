@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/wake/wake/internal/events"
-	"github.com/wake/wake/internal/state"
+	"github.com/AshleyImmanuel/Wake/internal/events"
+	"github.com/AshleyImmanuel/Wake/internal/state"
 )
 
 // Helper for assertions

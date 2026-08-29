@@ -1,4 +1,4 @@
-module github.com/wake/wake
+module github.com/AshleyImmanuel/Wake
 
 go 1.27.0
 

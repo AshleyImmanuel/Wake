@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/wake/wake/internal/events"
+	"github.com/AshleyImmanuel/Wake/internal/events"
 )
 
 // Reduce takes a slice of ordered events and reduces them into a current State snapshot.

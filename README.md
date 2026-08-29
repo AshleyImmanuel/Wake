@@ -7,10 +7,10 @@
   <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
   
   [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/Version-v0.3--alpha-orange.svg)]()
+  [![Version](https://img.shields.io/badge/Version-v1.0--beta-orange.svg)]()
 </div>
 
-> **[ALPHA RELEASE NOTICE]:** Wake is currently in early alpha (v0.3). The core checkpoint, reconciliation, and resume pipeline is functional. MCP server and IDE integrations are under active development. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
+> **[BETA RELEASE NOTICE]:** Wake is currently in v1.0 beta. The core checkpoint, reconciliation, and resume pipeline is fully functional and stable. MCP server and IDE integrations are under active development. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
 
 <br/>
 
@@ -21,24 +21,26 @@ By 2026, AI coding agents (like Claude Code, Aider, and Cursor) are incredibly c
 When you close your laptop, restart your IDE, or run into a token limit, the AI session dies. When you restart it, you either:
 1. Burn thousands of tokens re-feeding it the entire chat transcript.
 2. Watch it hallucinate because it forgot its original constraints.
-3. **Worst of all:** If *you* (the human) manually edit code while the AI is asleep, the AI wakes up totally oblivious to your changes, leading to massive merge conflicts and broken features.
+3. **Worst of all:** If *you* (the human) or *another AI tool* manually edit code while the AI is asleep, the AI wakes up totally oblivious to your changes, leading to massive merge conflicts and broken features.
 
-While tools like LangGraph save state, and Devin runs in expensive persistent cloud VMs, **neither actively diffs the AI's brain against the physical Git repository to catch human interference.**
+While tools like LangGraph save state, and Devin runs in expensive persistent cloud VMs, **neither actively diffs the AI's brain against the physical repository to catch human or cross-agent interference.**
 
 ## The Solution
 
-**Wake** is a local-first CLI tool that acts as a referee between your AI agent's "brain" and the actual Git repository. 
+**Wake** is a local-first CLI tool and middleware that acts as a referee between your AI agent's "brain" and the actual repository. 
 
-It anchors the AI's memory to the physical codebase using an event-sourced SQLite ledger. When a new AI session boots up, Wake diffs the repository against the AI's last memory and generates a compact **Recovery Packet** telling the AI exactly what it completed, what is blocked, and which files changed while it was asleep.
+It anchors the AI's memory to the physical codebase using an event-sourced SQLite ledger. When a new AI session boots up, Wake diffs the repository against the AI's last memory and generates a highly condensed, **token-efficient ~150-token Recovery Packet**. This packet tells the AI exactly what it completed, what is blocked, and which files changed while it was asleep.
 
 ## What Wake Does Today
 
-- **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers without uploading your repo to a cloud VM. Uses WAL mode with serialized connection pooling for safe concurrent access.
-- **Git Drift Reconciliation**: Compares the AI's last known state against the live Git repository. Flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` verdicts.
+- **Multi-Tool & AI Handoff Support**: Run multiple agents (e.g., Aider, Claude Code, custom scripts) in the same workspace. Wake handles the state synchronization so they don't step on each other's toes.
+- **AI-Interference Resilience**: If a human or another AI edits a file while the primary agent is offline, Wake detects the drift. It flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` verdicts to ensure the agent is aware of the exact changes before it resumes coding.
+- **Token-Efficient Recovery**: Instead of injecting thousands of lines of chat history to restart a session, Wake compiles the task context into a dense ~150-token recovery packet.
+- **No-Git Mode**: Wake can operate seamlessly even in repositories not tracked by Git, utilizing internal file hashing and tracking to manage state differences.
+- **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers locally. Uses WAL mode with serialized connection pooling for safe concurrent access by multiple tools.
 - **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
-- **Pre-Checkpoint Guard**: Blocks blind checkpoints when unreviewed human modifications or untracked files exist in the working tree.
+- **Pre-Checkpoint Guard**: Blocks blind checkpoints when unreviewed modifications or untracked files exist in the working tree.
 - **Feature Pivot Support**: Run `wake objective "New Goal"` to safely pivot the AI's memory without a full reset.
-- **17-Event State Engine**: Tracks task lifecycle through 17 distinct event types with a deterministic reducer and 3-tier dynamic confidence scoring (High/Low/None).
 
 ## Quickstart
 
@@ -49,6 +51,7 @@ Ensure you have Go 1.27+ installed:
 ```bash
 git clone https://github.com/AshleyImmanuel/Wake.git
 cd Wake
+go mod tidy
 go build -o wake .
 ```
 
@@ -90,7 +93,7 @@ wake history
 | `wake init` | Initialize a `.wake/` workspace in the current directory |
 | `wake checkpoint` | Create a versioned state snapshot |
 | `wake status` | Show reconciliation status (SAFE/STALE/CONFLICT) |
-| `wake resume` | Generate a compact recovery packet for a new AI session |
+| `wake resume` | Generate a compact ~150 token recovery packet for a new AI session |
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
 
@@ -110,8 +113,8 @@ Wake is built to **complement**, not replace, existing AI coding tools:
 
 | Tool | Core Strength | How Wake Synergizes |
 |------|---------------|---------------------|
-| **LangGraph / Checkpointers** | Python state-graph execution | Wake adds Git-level physical file reconciliation to internal memory states |
-| **Cursor / Aider** | IDE and codebase semantic search | Wake acts as a background "save state" layer to persist constraints across terminal reboots |
+| **LangGraph / Checkpointers** | Python state-graph execution | Wake adds physical file reconciliation to internal memory states |
+| **Cursor / Aider** | IDE and codebase semantic search | Wake acts as a background "save state" layer to persist constraints across terminal reboots and handoffs |
 | **Devin / Cloud Agents** | Autonomous execution in persistent cloud environments | Wake provides a local-first alternative for developers who want state-persistence on their local machine |
 
 ## Architecture
@@ -128,26 +131,19 @@ Wake is built entirely in Go for cross-platform binary distribution.
         |
    +---------+---------+
    v         v         v
-[State]   [Git]    [SQLite]
-(events,  (client, (db: WAL mode,
- state,    parser)  migrations,
- guard,             indices)
+[State]   [Git / FS] [SQLite]
+(events,  (client,   (db: WAL mode,
+ state,    parser)    migrations,
+ guard,               indices)
  reconcile)
 ```
 
 - `internal/events/`: 17 core Event types with deep cloning for thread safety
 - `internal/state/`: Deterministic reducer that collapses the event log into a point-in-time snapshot with dynamic confidence scoring
-- `internal/reconcile/`: Diffs the SQLite checkpoint against live Git status with path traversal protection
+- `internal/reconcile/`: Diffs the SQLite checkpoint against the file system to identify AI-interference. Stable and robust.
 - `internal/guard/`: Pre-checkpoint validation that blocks blind checkpoints on dirty working trees
 - `internal/service/`: Application facade that unifies all operations
 - `internal/db/`: SQLite persistence with transactional migrations and composite indices
-
-## Roadmap
-
-- **MCP Server (in progress):** Official Model Context Protocol (JSON-RPC 2.0 stdio) server for universal IDE integration (Cursor, VS Code, JetBrains, Claude Desktop)
-- **IDE Configuration Generators:** Auto-generate `.cursor/mcp.json`, `.vscode/mcp.json`, and Claude Desktop configs
-- **Git-less File Hashing:** Decouple from Git via SHA-256 file hashing for developers who don't use Git
-- **Comprehensive Test Suite:** Full unit, integration, and adversarial test coverage
 
 ## Copyright & License
 

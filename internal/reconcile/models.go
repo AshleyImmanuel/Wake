@@ -1,6 +1,6 @@
 package reconcile
 
-import "github.com/wake/wake/internal/state"
+import "github.com/AshleyImmanuel/Wake/internal/state"
 
 // ReconciliationStatus represents the outcome of comparing a state checkpoint against live repository state.
 type ReconciliationStatus string
