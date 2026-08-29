@@ -16,20 +16,28 @@ AI agents do not have persistent brains. When an AI session ends, its memory die
 
 ## 2. Installation
 
-Wake is distributed as a single, cross-platform binary.
+Wake ships as a single, cross-platform native binary with **zero runtime dependencies**.
 
-**Prerequisites:**
-- Go 1.27+
-- Git (must be installed and available in your `$PATH`)
-
-**Install via Go:**
+**Install via NPM (Recommended -- All Platforms)**
 ```bash
-go install github.com/AshleyImmanuel/Wake@latest
+npm install -g wake-engine
+```
+This auto-detects your OS (Windows, macOS, or Linux), downloads the correct pre-compiled Go binary from GitHub Releases, and places it in your system path. Node.js is only used during installation -- Wake itself runs as a native binary with zero overhead.
+
+**Install via Direct Binary Download**
+
+Download the latest release for your platform from the [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases).
+
+**Build from Source**
+```bash
+git clone https://github.com/AshleyImmanuel/Wake.git
+cd Wake
+go build -o wake .
 ```
 
-Ensure your `~/go/bin` directory is in your system `$PATH`. You can verify the installation by running:
+**Verify Installation**
 ```bash
-wake --version
+wake --help
 ```
 
 ---
@@ -76,6 +84,21 @@ Manually overrides the core objective of the task.
 - **Usage:** `wake objective "Pivot: Build PayPal instead of Stripe"`
 - **When to use:** Use this if the business requirements change mid-project and you want the AI to pivot without losing its memory of the codebase.
 
+### `wake check-conflict`
+Optimistic concurrency check that prevents an AI from silently overwriting recent human edits.
+- **Usage:** `wake check-conflict --file <path>`
+- **Behavior:** If the file was modified by a human in the last 10 seconds, returns `{"decision": "deny"}` and blocks the AI's write tool. Otherwise returns `{"decision": "allow"}`.
+
+### `wake mark`
+Records author attribution for a file modification.
+- **Usage:** `wake mark --file <path> --author <AI|HUMAN>`
+- **Behavior:** Appends a timestamped entry to `.wake/attribution.log`, allowing the reconciliation engine to distinguish between AI and human edits.
+
+### `wake setup`
+Auto-generates IDE MCP configurations and hooks.
+- **Usage:** `wake setup [--cursor] [--vscode] [--claude] [--antigravity]`
+- **Behavior:** When `--antigravity` is used, generates both `mcp_config.json` and `hooks.json` with PreToolUse conflict checks, PostToolUse attribution markers, and auto-checkpointing.
+
 ---
 
 ## 5. Integrating with AI Agents
@@ -101,15 +124,30 @@ If you are using the Antigravity IDE, you do not need to write code or configure
 wake setup --antigravity
 ```
 
-This will auto-generate `.agents/mcp_config.json` to register the MCP server, and an `.agents/hooks.json` file which forces the IDE to auto-checkpoint upon every file write. The hook looks like this:
+This will auto-generate `.agents/mcp_config.json` to register the MCP server, and an `.agents/hooks.json` file which forces the IDE to run conflict checks before writes, mark attributions after writes, and auto-checkpoint. The hook looks like this:
 
 ```json
 {
   "wake-autosave": {
+    "PreToolUse": [
+      {
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "wake check-conflict"
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
-        "matcher": "write_to_file|replace_file_content",
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content",
         "hooks": [
+          {
+            "type": "command",
+            "command": "wake mark --author AI"
+          },
           {
             "type": "command",
             "command": "wake checkpoint --objective 'Antigravity Auto-Save'"
@@ -131,7 +169,23 @@ This will auto-generate `.agents/mcp_config.json` to register the MCP server, an
 
 ---
 
-## 6. Advanced Configuration
+## 6. v1.1 Features
+
+### Continuous Recovery Stashing
+Wake's background daemon proactively stashes human-modified files into `.wake/recovery_stash/` before an AI can overwrite them. This is 100% IDE-agnostic and runs as part of the `wake mcp` daemon.
+
+### Git-less File Hashing Fallback
+Wake does not require Git. If run outside a Git repository, it seamlessly falls back to a custom `hashfs` engine that computes SHA-256 hashes of all files and stores them in `.wake/hash_index.json` to track state changes.
+
+### Write-Write Conflict Detection
+Optimistic concurrency controls detect if a human and AI edit the same file simultaneously. If a human modified a file less than 10 seconds ago, Wake blocks the AI's write tool to prevent silent data destruction.
+
+### Author Attribution Markers
+Every AI file modification is logged to `.wake/attribution.log` with a timestamp, allowing the reconciliation engine to precisely differentiate between `AI_MODIFIED` and `HUMAN_MODIFIED` code.
+
+---
+
+## 7. Advanced Configuration
 
 ### SQLite WAL Mode
 Wake is compiled with SQLite `WAL` (Write-Ahead Logging) enabled by default. This ensures that multiple concurrent AI agents (e.g., a Frontend Agent and a Backend Agent) can read and write to `.wake/state.db` simultaneously without encountering locking errors. 
@@ -144,4 +198,4 @@ wake status --task-id "123e4567-e89b-12d3-a456-426614174000"
 ```
 
 ---
-*Generated for Wake v1.0 Beta.*
+*Generated for Wake v1.1.0.*
