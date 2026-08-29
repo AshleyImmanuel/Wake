@@ -7,6 +7,7 @@ import (
 
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/hashfs"
 	"github.com/AshleyImmanuel/Wake/internal/service"
 	"github.com/spf13/cobra"
 )
@@ -41,6 +42,7 @@ func runCheckpointWithOpts(ctx context.Context, targetDir, taskIDStr, objective 
 	repoRoot, err := gitClient.GetRepoRoot(ctx, targetDir)
 	if err != nil {
 		repoRoot = targetDir
+		gitClient = hashfs.NewClient()
 	}
 
 	database, err := db.InitDB(repoRoot)

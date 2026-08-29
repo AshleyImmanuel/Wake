@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/hashfs"
 	"github.com/AshleyImmanuel/Wake/internal/mcp"
 	"github.com/AshleyImmanuel/Wake/internal/service"
 	"github.com/AshleyImmanuel/Wake/internal/stash"
@@ -29,6 +30,7 @@ var mcpCmd = &cobra.Command{
 		repoRoot, err := gitClient.GetRepoRoot(ctx, workDir)
 		if err != nil {
 			repoRoot = workDir
+			gitClient = hashfs.NewClient()
 		}
 
 		database, err := db.InitDB(repoRoot)
