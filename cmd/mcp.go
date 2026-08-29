@@ -7,6 +7,7 @@ import (
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/mcp"
 	"github.com/AshleyImmanuel/Wake/internal/service"
+	"github.com/AshleyImmanuel/Wake/internal/stash"
 	"github.com/spf13/cobra"
 	"os"
 	"os/signal"
@@ -47,6 +48,8 @@ var mcpCmd = &cobra.Command{
 			cancel()
 		}()
 
+		stashEngine := stash.NewEngine(repoRoot, gitClient)
+
 		// Embedded File Watcher / Auto-Checkpointer (Highly Optimized)
 		go func() {
 			ticker := time.NewTicker(5 * time.Second)
@@ -59,6 +62,10 @@ var mcpCmd = &cobra.Command{
 				case <-ctx.Done():
 					return
 				case <-ticker.C:
+					// 1. Proactively backup human code (Continuous Recovery Stashing)
+					_ = stashEngine.StashModifiedFiles(ctx)
+
+					// 2. Checkpoint debounce logic
 					currentModTime := getModifiedFilesMaxTime(ctx, gitClient, repoRoot)
 					if currentModTime.After(lastCheckpointModTime) {
 						// Check if stable (debounce)
