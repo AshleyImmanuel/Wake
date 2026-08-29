@@ -95,9 +95,9 @@ Records author attribution for a file modification.
 - **Behavior:** Appends a timestamped entry to `.wake/attribution.log`, allowing the reconciliation engine to distinguish between AI and human edits.
 
 ### `wake setup`
-Auto-generates IDE MCP configurations and hooks.
-- **Usage:** `wake setup [--cursor] [--vscode] [--claude] [--antigravity]`
-- **Behavior:** When `--antigravity` is used, generates both `mcp_config.json` and `hooks.json` with PreToolUse conflict checks, PostToolUse attribution markers, and auto-checkpointing.
+Auto-generates IDE MCP configurations and lifecycle hooks.
+- **Usage:** `wake setup [--cursor] [--vscode] [--claude] [--antigravity]` (Run with no flags for all).
+- **Behavior:** Generates the MCP connection JSON for the specified IDEs. For **Cursor** and **Antigravity**, it also auto-generates native `hooks.json` files that run PreToolUse conflict checks, PostToolUse attribution markers, and auto-checkpointing.
 
 ---
 
@@ -115,16 +115,12 @@ To integrate Wake into your agent, implement this exact lifecycle:
    Every time the AI executes a `WriteFile` or `RunCommand` tool, execute `wake checkpoint` in the background.
 
 ### 4. Zero-Config Embedded File Watcher
-Wake's `mcp` server natively embeds a lightweight, debounced file watcher. When an IDE (Cursor, Claude Desktop, Antigravity) connects to the MCP server, this background goroutine automatically runs. If you (or an AI without hooks) modify files and then go idle for a few seconds, the daemon automatically synthesizes a background checkpoint. 
+Wake's `mcp` server natively embeds a lightweight, debounced file watcher. When an IDE connects to the MCP server, this background goroutine automatically runs. **If your IDE does not support native hooks** (like VS Code or Windsurf), the daemon automatically watches for file modifications. When you or the AI edit files and go idle for a few seconds, the watcher automatically synthesizes a background checkpoint.
 
-### Native Antigravity Integration
-If you are using the Antigravity IDE, you do not need to write code or configure hooks manually. Simply run:
+### 5. Native IDE Hooks (Cursor & Antigravity)
+If your IDE supports native lifecycle hooks (such as Cursor or Antigravity), Wake can intercept tool usage *before* and *after* execution. 
 
-```bash
-wake setup --antigravity
-```
-
-This will auto-generate `.agents/mcp_config.json` to register the MCP server, and an `.agents/hooks.json` file which forces the IDE to run conflict checks before writes, mark attributions after writes, and auto-checkpoint. The hook looks like this:
+Run `wake setup --cursor` or `wake setup --antigravity` to generate these hooks automatically. For example, the Antigravity hook looks like this:
 
 ```json
 {

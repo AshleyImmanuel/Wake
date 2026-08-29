@@ -217,8 +217,8 @@ Example (Zed):
 | `wake resume` | Generate a compact ~150 token recovery packet for a new AI session |
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
-| `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration (auto-starts background watcher and continuous stashing) |
-| `wake setup` | Auto-generate MCP configs for any IDE: `--cursor`, `--vscode`, `--windsurf`, `--kiro`, `--claude`, `--zed`, `--antigravity`. Run without flags to generate all. |
+| `wake mcp` | Start the MCP server for IDE integration. **Auto-starts a zero-config file watcher daemon** that automatically synthesizes checkpoints if the IDE lacks native hooks. |
+| `wake setup` | Auto-generate MCP configs for any IDE: `--cursor`, `--vscode`, `--windsurf`, `--kiro`, `--claude`, `--zed`, `--antigravity`. Run without flags to generate all. (Also generates local hooks for Cursor and Antigravity). |
 | `wake check-conflict` | Optimistic concurrency check to block rogue AI overwrites. |
 | `wake mark` | Mark a file with Author Attribution (AI or HUMAN). |
 

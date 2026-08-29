@@ -80,6 +80,24 @@ Supported IDEs: Cursor, VS Code (Copilot), Windsurf, Kiro, Claude Desktop/Code, 
 				return err
 			}
 			fmt.Println("[OK] Generated .cursor/mcp.json")
+
+			cursorHooks := map[string]interface{}{
+				"version": 1,
+				"hooks": map[string]interface{}{
+					"preToolUse": []interface{}{
+						map[string]interface{}{"command": fmt.Sprintf("\"%s\" check-conflict", exe)},
+					},
+					"postToolUse": []interface{}{
+						map[string]interface{}{"command": fmt.Sprintf("\"%s\" mark --author AI", exe)},
+						map[string]interface{}{"command": fmt.Sprintf("\"%s\" checkpoint --objective 'Cursor Auto-Save'", exe)},
+					},
+				},
+			}
+			cb, _ := json.MarshalIndent(cursorHooks, "", "  ")
+			if err := writeConfig(".cursor", "hooks.json", cb); err != nil {
+				return err
+			}
+			fmt.Println("[OK] Generated .cursor/hooks.json")
 		}
 
 		// --- VS Code (GitHub Copilot) ---
