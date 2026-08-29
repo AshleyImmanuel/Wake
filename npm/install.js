@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 
-const version = "1.1.0"; // Should match package.json version
+const version = "1.2.0"; // Should match package.json version
 
 let osName = os.platform();
 let arch = os.arch();
