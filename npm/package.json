@@ -1,0 +1,28 @@
+{
+  "name": "wake-engine",
+  "version": "1.1.0",
+  "description": "Wake AI State Recovery Engine - The missing 'Save State' engine for autonomous AI coding agents.",
+  "main": "index.js",
+  "bin": {
+    "wake": "index.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AshleyImmanuel/Wake.git"
+  },
+  "keywords": [
+    "ai",
+    "agents",
+    "state",
+    "mcp"
+  ],
+  "author": "Ashley Immanuel",
+  "license": "Proprietary",
+  "bugs": {
+    "url": "https://github.com/AshleyImmanuel/Wake/issues"
+  },
+  "homepage": "https://github.com/AshleyImmanuel/Wake#readme"
+}

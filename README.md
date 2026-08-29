@@ -66,13 +66,13 @@ It anchors the agent's memory to the local codebase using a highly performant, e
 ## Quickstart
 
 ### Installation
-Wake is built completely in Go for blazing fast performance and simple, dependency-free binary installation.
+Wake is blazing fast and completely cross-platform. We distribute our native binaries using a lightweight NPM wrapper so you can install it instantly.
 
-**Option 1: Using Go (Recommended)**
+**Option 1: Node Package Manager (Recommended)**
 ```bash
-go install github.com/AshleyImmanuel/Wake@latest
+npm install -g wake-engine
 ```
-This automatically compiles and places the `wake` binary in your system path.
+*Note: This simply downloads the highly-optimized Go binary to your machine. It does not run Node during execution.*
 
 **Option 2: Direct Binary Download**
 You can download pre-compiled, zero-dependency binaries for Windows (`.exe`), macOS, and Linux directly from our [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases).
