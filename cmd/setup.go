@@ -62,7 +62,7 @@ var setupCmd = &cobra.Command{
 		}
 
 		if setupClaude {
-			if err := os.WriteFile("claude_desktop_config.json", b, 0644); err != nil {
+			if err := os.WriteFile("claude_desktop_config.json", b, 0600); err != nil {
 				return err
 			}
 			fmt.Println("Generated claude_desktop_config.json snippet")
@@ -73,10 +73,10 @@ var setupCmd = &cobra.Command{
 }
 
 func writeConfig(dir, file string, data []byte) error {
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(dir, file), data, 0644)
+	return os.WriteFile(filepath.Join(dir, file), data, 0600)
 }
 
 func init() {

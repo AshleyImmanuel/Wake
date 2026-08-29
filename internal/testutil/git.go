@@ -19,7 +19,7 @@ func SetupTempRepo(t *testing.T) string {
 
 	// Create an initial file and commit it
 	readmePath := filepath.Join(dir, "README.md")
-	if err := os.WriteFile(readmePath, []byte("# Test Repo\n"), 0644); err != nil {
+	if err := os.WriteFile(readmePath, []byte("# Test Repo\n"), 0600); err != nil {
 		t.Fatalf("failed to write README: %v", err)
 	}
 
@@ -31,6 +31,7 @@ func SetupTempRepo(t *testing.T) string {
 
 func runGit(t *testing.T, dir string, args ...string) {
 	t.Helper()
+	// #nosec G204
 	cmd := exec.Command("git", args...)
 	cmd.Dir = dir
 	if out, err := cmd.CombinedOutput(); err != nil {

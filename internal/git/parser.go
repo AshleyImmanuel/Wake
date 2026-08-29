@@ -187,7 +187,7 @@ func unescapeGitPath(p string) string {
 					val = val*8 + int(s[i]-'0')
 					digits++
 				}
-				buf.WriteByte(byte(val))
+				buf.WriteByte(byte(val & 0xFF))
 			default:
 				buf.WriteByte(s[i])
 			}
