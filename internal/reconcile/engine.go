@@ -482,18 +482,6 @@ func matchesConstraint(filePath, constraint string) bool {
 		}
 	}
 
-	// If no explicit candidate path matched, check if any non-stopword token matches the root directory segment
-	tokens := extractTokens(constraint)
-	firstSeg := strings.Split(normalizePath(filePath), "/")[0]
-	for _, token := range tokens {
-		if stopWords[strings.ToLower(token)] {
-			continue
-		}
-		if strings.EqualFold(token, firstSeg) {
-			return true
-		}
-	}
-
 	return false
 }
 
@@ -556,11 +544,20 @@ func extractTokens(s string) []string {
 func extractCandidatePaths(s string) []string {
 	tokens := extractTokens(s)
 	candidates := make([]string, 0)
-	for _, t := range tokens {
+	for i, t := range tokens {
 		if stopWords[strings.ToLower(t)] {
 			continue
 		}
-		if looksLikeFilePath(t) || (strings.Contains(t, "/") && !strings.Contains(t, "://") && isSafeRelativePath(strings.ReplaceAll(t, "*", "x"))) {
+		isPath := looksLikeFilePath(t) || (strings.Contains(t, "/") && !strings.Contains(t, "://") && isSafeRelativePath(strings.ReplaceAll(t, "*", "x")))
+		
+		if !isPath && i+1 < len(tokens) {
+			next := strings.ToLower(tokens[i+1])
+			if next == "directory" || next == "dir" || next == "folder" || next == "package" || next == "pkg" || next == "module" {
+				isPath = true
+			}
+		}
+
+		if isPath {
 			candidates = append(candidates, t)
 		}
 	}
