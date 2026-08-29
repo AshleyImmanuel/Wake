@@ -385,3 +385,71 @@ func parseTimestamp(s string) (time.Time, error) {
 	}
 	return time.Time{}, fmt.Errorf("invalid timestamp format: %q", s)
 }
+
+// PruneStats holds the results of a prune operation.
+type PruneStats struct {
+	DeletedCheckpoints int64
+	DeletedEvents      int64
+}
+
+// PruneHistory deletes old checkpoints and events to save space.
+// It ensures that the absolute latest checkpoint for each task is NEVER deleted, 
+// no matter how old it is.
+func PruneHistory(ctx context.Context, db *sql.DB, olderThan time.Time) (*PruneStats, error) {
+	if db == nil {
+		return nil, fmt.Errorf("db connection is nil")
+	}
+
+	threshold := olderThan.UTC().Format(time.RFC3339)
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin tx: %w", err)
+	}
+	defer tx.Rollback()
+
+	// 1. Delete old checkpoints, BUT keep the most recent one for each task
+	// We use a CTE or subquery to identify the latest checkpoint id per task
+	queryCheckpoints := `
+		DELETE FROM checkpoints 
+		WHERE timestamp < ? 
+		AND id NOT IN (
+			SELECT id FROM (
+				SELECT id, ROW_NUMBER() OVER(PARTITION BY task_id ORDER BY timestamp DESC, state_version DESC) as rn 
+				FROM checkpoints
+			) WHERE rn = 1
+		)
+	`
+	resCp, err := tx.ExecContext(ctx, queryCheckpoints, threshold)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete old checkpoints: %w", err)
+	}
+	deletedCp, _ := resCp.RowsAffected()
+
+	// 2. Delete old events
+	// It is safe to delete events older than 'threshold' IF there is a checkpoint 
+	// for that task that was created AFTER the event (meaning the event's state is safely captured).
+	// For simplicity, we delete any event older than the threshold, provided the task has at least one 
+	// checkpoint newer than or equal to the event.
+	queryEvents := `
+		DELETE FROM events 
+		WHERE timestamp < ? 
+		AND task_id IN (
+			SELECT c.task_id FROM checkpoints c WHERE c.timestamp >= events.timestamp
+		)
+	`
+	resEv, err := tx.ExecContext(ctx, queryEvents, threshold)
+	if err != nil {
+		return nil, fmt.Errorf("failed to delete old events: %w", err)
+	}
+	deletedEv, _ := resEv.RowsAffected()
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit prune transaction: %w", err)
+	}
+
+	return &PruneStats{
+		DeletedCheckpoints: deletedCp,
+		DeletedEvents:      deletedEv,
+	}, nil
+}
