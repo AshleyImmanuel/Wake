@@ -86,6 +86,21 @@ wake resume
 wake history
 ```
 
+### Integrate via MCP (No Clone Required)
+
+If you just want to plug Wake into your AI client (like Claude Desktop, Cursor, or Antigravity) without cloning the source code, you can run it on-the-fly! Just add this to your client's MCP configuration (requires Go to be installed):
+
+```json
+{
+  "mcpServers": {
+    "wake": {
+      "command": "go",
+      "args": ["run", "github.com/AshleyImmanuel/Wake@latest", "mcp"]
+    }
+  }
+}
+```
+
 ### CLI Reference
 
 | Command | Description |
