@@ -13,9 +13,12 @@ import (
 	"github.com/AshleyImmanuel/Wake/internal/git"
 )
 
-type Client struct {
-}
+// Client provides a Git-less file hashing fallback for environments
+// where Git is not installed or the directory is not a Git repository.
+// It uses SHA-256 hashing to track file state changes.
+type Client struct{}
 
+// NewClient creates a new hashfs Client that satisfies the git.Client interface.
 func NewClient() git.Client {
 	return &Client{}
 }
