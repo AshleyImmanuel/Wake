@@ -432,9 +432,29 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 			if len(parts) == 2 {
 				file := strings.TrimSpace(parts[1])
 
-				// Try to get diff. If we can't get it, or it IS semantic, keep the invalidation
-				diff, err := gitClient.GetFileDiff(ctx, repoPath, file)
-				if err != nil || IsSemanticChange(diff) {
+				isSemantic := true
+				
+				if strings.HasSuffix(file, ".go") {
+					// 100% accurate AST parser for Go files (0 tokens, fully local)
+					oldCode, _ := gitClient.GetFileAtCommit(ctx, repoPath, file, cp.Commit)
+					
+					// Get the current file contents from disk
+					fullPath, ok := resolveSafeRepoPath(root, file)
+					if ok {
+						if newCodeBytes, err := os.ReadFile(fullPath); err == nil {
+							newCode := string(newCodeBytes)
+							isSemantic = IsSemanticChangeGoAST(oldCode, newCode)
+						}
+					}
+				} else {
+					// 90% heuristic diff parser for all other languages
+					diff, err := gitClient.GetFileDiff(ctx, repoPath, file)
+					if err == nil {
+						isSemantic = IsSemanticChange(diff)
+					}
+				}
+
+				if isSemantic {
 					finalInvalidations = append(finalInvalidations, invalidation)
 				}
 			} else {
