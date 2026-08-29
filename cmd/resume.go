@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/reconcile"
 	"github.com/AshleyImmanuel/Wake/internal/service"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -34,7 +34,7 @@ var resumeCmd = &cobra.Command{
 		gitClient := git.NewClient(nil)
 		repoRoot, err := gitClient.GetRepoRoot(cmd.Context(), targetDir)
 		if err != nil {
-			return fmt.Errorf("git repository not found: %w", err)
+			repoRoot = targetDir
 		}
 
 		database, err := db.InitDB(repoRoot)
@@ -63,7 +63,7 @@ var resumeCmd = &cobra.Command{
 		if len(cp.StateData.Completed) > 0 {
 			fmt.Println("\nCOMPLETED")
 			for _, c := range cp.StateData.Completed {
-				fmt.Printf("✓ %s\n", c)
+				fmt.Printf("[OK] %s\n", c)
 			}
 		}
 
@@ -97,7 +97,7 @@ var resumeCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\nLAST VERIFIED\nCommit %s\n", cp.Commit)
-		
+
 		if cp.StateData.NextAction != "" {
 			fmt.Printf("\nNEXT ACTION\n%s\n", cp.StateData.NextAction)
 		}
@@ -109,7 +109,7 @@ var resumeCmd = &cobra.Command{
 			fmt.Println("No modifications since last checkpoint. Safe to resume from Next Action.")
 		} else {
 			fmt.Printf("Status: %s\n", result.Status)
-			
+
 			if packet.Guidance != "" {
 				// We still print the changed files if there's any
 				if !strings.Contains(packet.Guidance, "CRITICAL") && len(result.ChangedFiles) > 0 {

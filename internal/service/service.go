@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/events"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/guard"
 	"github.com/AshleyImmanuel/Wake/internal/reconcile"
 	"github.com/AshleyImmanuel/Wake/internal/state"
+	"github.com/google/uuid"
 )
 
 type TaskService interface {
@@ -50,7 +50,7 @@ func (s *taskService) getRepoRoot(ctx context.Context, dir string) (string, erro
 	}
 	repoRoot, err := s.gitClient.GetRepoRoot(ctx, dir)
 	if err != nil {
-		return "", fmt.Errorf("git repository root not found at '%s': %w", dir, err)
+		return dir, nil
 	}
 	return repoRoot, nil
 }
@@ -114,6 +114,13 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 	currentState.TaskID = taskID
 	currentState.LastVerified = repoState.CommitHash
 
+	// Track files locally if no git commit
+	if repoState.CommitHash == "" {
+		if files, err := reconcile.ScanDirectory(repoState.RootPath); err == nil {
+			currentState.Files = files
+		}
+	}
+
 	commitEv := events.NewEvent(taskID, events.GitCommit, map[string]interface{}{
 		"hash":   repoState.CommitHash,
 		"branch": repoState.Branch,
@@ -169,7 +176,7 @@ func (s *taskService) GetHistory(ctx context.Context, taskID string, limit int) 
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if limit > 0 && len(evs) > limit {
 		evs = evs[len(evs)-limit:]
 	}
@@ -194,15 +201,15 @@ func (s *taskService) ResumeTask(ctx context.Context, taskID string) (*ResumePac
 
 	guidance := ""
 	if result.Status == reconcile.StatusSafe {
-		guidance = "No modifications since last checkpoint. Safe to resume from Next Action."
+		guidance = "Clean. Resume from Next Action."
 	} else {
 		if strings.Contains(result.Reason, "merge conflicts") {
-			guidance = "CRITICAL RECOVERY INSTRUCTION: The repository is in a broken Git merge state. You must resolve the merge conflicts using `git merge --continue` or `git rebase --continue` before you do any other work."
+			guidance = "CRITICAL: Resolve merge conflicts first (git merge/rebase --continue)."
 		} else if !result.BranchMatch {
 			branch, _ := s.gitClient.GetCurrentBranch(ctx, repoRoot)
-			guidance = fmt.Sprintf("CRITICAL RECOVERY INSTRUCTION: You are on branch '%s', but the checkpoint was saved on branch '%s'. You must run `git checkout %s` before continuing to avoid corrupting the state.", branch, cp.Branch, cp.Branch)
+			guidance = fmt.Sprintf("CRITICAL: On branch '%s', expected '%s'. Run: git checkout %s", branch, cp.Branch, cp.Branch)
 		} else if len(result.ChangedFiles) > 0 {
-			guidance = "RECOVERY INSTRUCTION: Read the changed files above before continuing to ensure your context is completely up-to-date."
+			guidance = "Files changed since checkpoint. Review before continuing."
 		}
 	}
 
@@ -263,15 +270,15 @@ func (s *taskService) InitWorkspace(ctx context.Context, dir string) error {
 			return fmt.Errorf("failed to get current working directory: %w", err)
 		}
 	}
-	
+
 	wakeDir := filepath.Join(dir, ".wake")
-	if err := os.MkdirAll(wakeDir, 0755); err != nil {
+	if err := os.MkdirAll(wakeDir, 0700); err != nil {
 		return fmt.Errorf("failed to create .wake directory: %w", err)
 	}
-	
+
 	gitignorePath := filepath.Join(wakeDir, ".gitignore")
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
-		_ = os.WriteFile(gitignorePath, []byte("*\n"), 0644)
+		_ = os.WriteFile(gitignorePath, []byte("*\n"), 0600)
 	}
 
 	return nil

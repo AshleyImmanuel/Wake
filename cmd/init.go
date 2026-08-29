@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
+	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/service"
-	"github.com/AshleyImmanuel/Wake/internal/db"
+	"github.com/spf13/cobra"
 )
 
 var initDir string

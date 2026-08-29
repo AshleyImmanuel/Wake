@@ -61,7 +61,7 @@ func TestE2E_InitAndCheckpoint(t *testing.T) {
 	// 3. Make a change, record an event
 	testFile := filepath.Join(repoDir, "test.txt")
 	os.WriteFile(testFile, []byte("hello"), 0644)
-	
+
 	// Track the file
 	cmd := exec.Command("git", "add", "test.txt")
 	cmd.Dir = repoDir

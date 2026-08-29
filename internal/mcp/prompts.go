@@ -2,8 +2,9 @@ package mcp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+
+	"github.com/AshleyImmanuel/Wake/internal/service"
 )
 
 func getPrompts() []Prompt {
@@ -54,8 +55,8 @@ func (s *Server) handlePromptGet(ctx context.Context, name string, args map[stri
 			return nil, err
 		}
 
-		b, _ := json.MarshalIndent(resume.Checkpoint.StateData, "", "  ")
-		content := fmt.Sprintf("Welcome back to your task! Here is your current state:\n\n%s\n\nReconciliation Guidance: %s", string(b), resume.Guidance)
+		textOut := service.FormatResumePacket(resume)
+		content := fmt.Sprintf("%s\nBriefly tell the user where you left off, then continue from Next Action.", textOut)
 
 		return &GetPromptResult{
 			Description: "Session Start Context",
@@ -77,8 +78,7 @@ func (s *Server) handlePromptGet(ctx context.Context, name string, args map[stri
 		}
 
 		changes := resume.ReconciliationResult.ChangedFiles
-		
-		content := fmt.Sprintf("Please review the following changed files before creating a checkpoint:\n\n%v\n\nEnsure that these changes align with the objective: %s", changes, resume.Checkpoint.StateData.Objective)
+		content := fmt.Sprintf("Review changed files before checkpoint: %v\nObjective: %s", changes, resume.Checkpoint.StateData.Objective)
 
 		return &GetPromptResult{
 			Description: "Pre-commit Audit",
@@ -94,7 +94,7 @@ func (s *Server) handlePromptGet(ctx context.Context, name string, args map[stri
 		}, nil
 
 	case "wake_conflict_resolution":
-		content := "The repository is currently in a CONFLICT state due to a merge or rebase. Please resolve the conflicts in the affected files and run `git merge --continue` or `git rebase --continue`. Finally, run the `wake_checkpoint` tool to record your resolution."
+		content := "CONFLICT: Resolve merge conflicts, run git merge/rebase --continue, then wake_checkpoint."
 		return &GetPromptResult{
 			Description: "Conflict Resolution Guidance",
 			Messages: []PromptMessage{

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/service"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -44,7 +44,7 @@ func runCheckpointWithOpts(ctx context.Context, targetDir, taskIDStr, objective 
 	gitClient := git.NewClient(nil)
 	repoRoot, err := gitClient.GetRepoRoot(ctx, targetDir)
 	if err != nil {
-		return fmt.Errorf("git repository root not found at '%s': %w", targetDir, err)
+		repoRoot = targetDir
 	}
 
 	database, err := db.InitDB(repoRoot)
@@ -70,7 +70,7 @@ func runCheckpointWithOpts(ctx context.Context, targetDir, taskIDStr, objective 
 	fmt.Printf("Commit:        %s\n", cp.Commit)
 	fmt.Printf("Branch:        %s\n", cp.Branch)
 	fmt.Printf("State Version: %d\n", cp.StateVersion)
-	
+
 	isClean, _ := gitClient.IsClean(ctx, repoRoot)
 	if isClean {
 		fmt.Println("Working Tree:  Clean")

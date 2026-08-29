@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/AshleyImmanuel/Wake/internal/events"
 	"github.com/AshleyImmanuel/Wake/internal/service"
@@ -13,78 +14,78 @@ func getTools() []Tool {
 	return []Tool{
 		{
 			Name:        "wake_checkpoint",
-			Description: "Creates a checkpoint of the current workspace state",
+			Description: "Save workspace state snapshot",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
 					"task_id": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional task ID to associate with the checkpoint",
+						"description": "Task ID",
 					},
 					"objective": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional updated objective",
+						"description": "Task objective",
 					},
 					"force": map[string]interface{}{
 						"type":        "boolean",
-						"description": "Force checkpoint creation even if guard checks fail",
+						"description": "Force creation",
 					},
 					"tracked_files": map[string]interface{}{
 						"type": "array",
 						"items": map[string]interface{}{
 							"type": "string",
 						},
-						"description": "Optional list of files to track",
+						"description": "Files to track",
 					},
 				},
 			},
 		},
 		{
 			Name:        "wake_status",
-			Description: "Gets reconciliation status of the repository",
+			Description: "Get workspace reconciliation status",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
 					"task_id": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional task ID",
+						"description": "Task ID",
 					},
 				},
 			},
 		},
 		{
 			Name:        "wake_resume",
-			Description: "Generates a resume packet to continue a task",
+			Description: "Get compact recovery packet to continue a task",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
 					"task_id": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional task ID",
+						"description": "Task ID",
 					},
 				},
 			},
 		},
 		{
 			Name:        "wake_history",
-			Description: "Gets event history for a task",
+			Description: "Get task event history",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
 					"task_id": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional task ID",
+						"description": "Task ID",
 					},
 					"limit": map[string]interface{}{
 						"type":        "number",
-						"description": "Limit number of events returned (default 50)",
+						"description": "Max events (default 50)",
 					},
 				},
 			},
 		},
 		{
 			Name:        "wake_update_objective",
-			Description: "Updates the objective of a task",
+			Description: "Update task objective",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
@@ -102,7 +103,7 @@ func getTools() []Tool {
 		},
 		{
 			Name:        "wake_record_event",
-			Description: "Records an event in the task history",
+			Description: "Record task event",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
@@ -112,11 +113,11 @@ func getTools() []Tool {
 					},
 					"event_type": map[string]interface{}{
 						"type":        "string",
-						"description": "Type of event",
+						"description": "Event type",
 					},
 					"payload": map[string]interface{}{
 						"type":        "object",
-						"description": "Event payload",
+						"description": "Event data",
 					},
 				},
 				Required: []string{"task_id", "event_type"},
@@ -124,13 +125,13 @@ func getTools() []Tool {
 		},
 		{
 			Name:        "wake_init",
-			Description: "Initializes a Wake workspace",
+			Description: "Initialize Wake workspace",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
 					"dir": map[string]interface{}{
 						"type":        "string",
-						"description": "Optional directory to initialize (defaults to current)",
+						"description": "Directory path",
 					},
 				},
 			},
@@ -167,17 +168,43 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 				}
 			}
 		}
-		result, err = s.svc.CreateCheckpoint(ctx, req)
+		res, e := s.svc.CreateCheckpoint(ctx, req)
+		err = e
+		if err == nil {
+			result = fmt.Sprintf("Checkpoint created successfully.\nTask ID: %s\nState Version: %d", res.TaskID.String(), res.StateVersion)
+		}
 
 	case "wake_status":
 		req := service.StatusRequest{
 			TaskID: getString("task_id"),
 			Dir:    s.workDir,
 		}
-		result, err = s.svc.GetStatus(ctx, req)
+		res, e := s.svc.GetStatus(ctx, req)
+		err = e
+		if err == nil {
+			var sb strings.Builder
+			sb.WriteString(fmt.Sprintf("Status: %s\nConfidence: %s\nReason: %s\n", res.Status, res.ConfidenceLevel, res.Reason))
+			if len(res.ChangedFiles) > 0 {
+				sb.WriteString("Changed:\n")
+				for _, f := range res.ChangedFiles {
+					sb.WriteString(fmt.Sprintf("- %s\n", f))
+				}
+			}
+			if len(res.ConstraintViolations) > 0 {
+				sb.WriteString("Violations:\n")
+				for _, v := range res.ConstraintViolations {
+					sb.WriteString(fmt.Sprintf("- %s\n", v))
+				}
+			}
+			result = sb.String()
+		}
 
 	case "wake_resume":
-		result, err = s.svc.ResumeTask(ctx, getString("task_id"))
+		res, e := s.svc.ResumeTask(ctx, getString("task_id"))
+		err = e
+		if err == nil {
+			result = service.FormatResumePacket(res)
+		}
 
 	case "wake_history":
 		limit := 50
@@ -203,6 +230,21 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 		if taskID == "" || eType == "" {
 			return nil, fmt.Errorf("task_id and event_type are required")
 		}
+		// Validate event type against known types
+		validTypes := map[events.EventType]bool{
+			events.TaskStarted: true, events.RequirementAdded: true,
+			events.ConstraintAdded: true, events.UserApproval: true,
+			events.UserRejection: true, events.DecisionMade: true,
+			events.FileChanged: true, events.CommandExecuted: true,
+			events.TestStarted: true, events.TestPassed: true,
+			events.TestFailed: true, events.BlockerCreated: true,
+			events.BlockerResolved: true, events.MilestoneCompleted: true,
+			events.GitCommit: true, events.SessionInterrupted: true,
+			events.SessionResumed: true,
+		}
+		if !validTypes[events.EventType(eType)] {
+			return nil, fmt.Errorf("invalid event_type: %s", eType)
+		}
 		var payload map[string]interface{}
 		if p, ok := args["payload"].(map[string]interface{}); ok {
 			payload = p
@@ -227,12 +269,19 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 		return nil, err
 	}
 
-	b, _ := json.MarshalIndent(result, "", "  ")
+	var textOut string
+	if str, ok := result.(string); ok {
+		textOut = str
+	} else {
+		b, _ := json.MarshalIndent(result, "", "  ")
+		textOut = string(b)
+	}
+
 	return &CallToolResult{
 		Content: []interface{}{
 			TextContent{
 				Type: "text",
-				Text: string(b),
+				Text: textOut,
 			},
 		},
 	}, nil

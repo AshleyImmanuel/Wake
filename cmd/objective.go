@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/service"
+	"github.com/spf13/cobra"
 )
 
 var objectiveTaskID string
@@ -21,9 +21,8 @@ var objectiveCmd = &cobra.Command{
 		gitClient := git.NewClient(nil)
 		repoRoot, err := gitClient.GetRepoRoot(cmd.Context(), targetDir)
 		if err != nil {
-			return err
+			repoRoot = targetDir
 		}
-
 		database, err := db.InitDB(repoRoot)
 		if err != nil {
 			return err
@@ -35,7 +34,7 @@ var objectiveCmd = &cobra.Command{
 		if err := svc.UpdateObjective(cmd.Context(), objectiveTaskID, newObjective); err != nil {
 			return err
 		}
-		
+
 		fmt.Printf("Successfully updated the task objective to: '%s'\n", newObjective)
 		fmt.Println("Run 'wake checkpoint' to solidify this new objective into the state.")
 		return nil

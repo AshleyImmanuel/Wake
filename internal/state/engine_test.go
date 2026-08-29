@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/AshleyImmanuel/Wake/internal/events"
+	"github.com/google/uuid"
 )
 
 func TestReduceEventTypes(t *testing.T) {
@@ -154,7 +154,7 @@ func TestReduceEventTypes(t *testing.T) {
 			},
 		},
 		{
-			Type: events.SessionResumed,
+			Type:    events.SessionResumed,
 			Payload: map[string]interface{}{},
 		},
 	}
@@ -331,12 +331,12 @@ func TestStateClone(t *testing.T) {
 
 func TestHelpers(t *testing.T) {
 	m := map[string]interface{}{
-		"str":         " val ",
-		"strSlice":    []string{"a", "b"},
-		"ifaceSlice":  []interface{}{"c", 1, "d", ""},
-		"int":         42,
-		"int64":       int64(43),
-		"float64":     float64(44),
+		"str":        " val ",
+		"strSlice":   []string{"a", "b"},
+		"ifaceSlice": []interface{}{"c", 1, "d", ""},
+		"int":        42,
+		"int64":      int64(43),
+		"float64":    float64(44),
 	}
 
 	// getString

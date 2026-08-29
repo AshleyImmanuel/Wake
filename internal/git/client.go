@@ -138,7 +138,13 @@ func (c *client) GetStatus(ctx context.Context, repoPath string) (*StatusResult,
 func (c *client) GetState(ctx context.Context, repoPath string) (*RepositoryState, error) {
 	rootPath, err := c.GetRepoRoot(ctx, repoPath)
 	if err != nil {
-		return nil, err
+		return &RepositoryState{
+			RootPath:   repoPath,
+			Branch:     "none",
+			CommitHash: "",
+			HasCommits: false,
+			IsClean:    true,
+		}, nil
 	}
 
 	hasCommits := true

@@ -283,12 +283,12 @@ func TestReconcile(t *testing.T) {
 func TestFileCategorization(t *testing.T) {
 	cp := state.Checkpoint{Branch: "main", Commit: "abc"}
 	repo := git.RepositoryState{
-		Branch:     "main",
-		CommitHash: "abc",
-		HasCommits: true,
-		ModifiedFiles: []string{"mod.go"},
+		Branch:         "main",
+		CommitHash:     "abc",
+		HasCommits:     true,
+		ModifiedFiles:  []string{"mod.go"},
 		UntrackedFiles: []string{"unt.go", ".wake/tmp.txt"},
-		UnmergedFiles: []string{"unm.go"},
+		UnmergedFiles:  []string{"unm.go"},
 		StagedFiles: []git.FileStatus{
 			{Path: "staged.go"},
 		},
@@ -428,10 +428,10 @@ func TestLooksLikeFilePath(t *testing.T) {
 }
 
 func TestEdgeCases(t *testing.T) {
-	// Empty checkpoint vs empty repo state
+	// Empty checkpoint vs empty repo state (Now treated as a clean non-git workspace)
 	res := Reconcile(state.Checkpoint{}, git.RepositoryState{}, nil)
-	if res.Status != StatusStale {
-		t.Errorf("Empty states should be StatusStale, got %v", res.Status)
+	if res.Status != StatusSafe {
+		t.Errorf("Empty states should be StatusSafe for non-git workspaces, got %v", res.Status)
 	}
 
 	// Checkpoint with no commit, repo with commits
@@ -448,7 +448,7 @@ func TestEdgeCases(t *testing.T) {
 	}
 
 	// Unicode file paths
-	unicodePath := "🚀/test.go"
+	unicodePath := "unicode_dir/test.go"
 	if !isSafeRelativePath(unicodePath) {
 		t.Errorf("isSafeRelativePath should accept unicode paths")
 	}

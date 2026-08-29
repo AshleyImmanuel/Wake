@@ -3,8 +3,8 @@ package state
 import (
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/AshleyImmanuel/Wake/internal/events"
+	"github.com/google/uuid"
 )
 
 // Reduce takes a slice of ordered events and reduces them into a current State snapshot.

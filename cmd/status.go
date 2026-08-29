@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/reconcile"
 	"github.com/AshleyImmanuel/Wake/internal/service"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -34,7 +34,7 @@ var statusCmd = &cobra.Command{
 		gitClient := git.NewClient(nil)
 		repoRoot, err := gitClient.GetRepoRoot(cmd.Context(), statusDir)
 		if err != nil {
-			return fmt.Errorf("git repository root not found at '%s': %w", statusDir, err)
+			repoRoot = statusDir
 		}
 
 		database, err := db.InitDB(repoRoot)
@@ -48,7 +48,7 @@ var statusCmd = &cobra.Command{
 			TaskID: statusTaskID,
 			Dir:    statusDir,
 		})
-		
+
 		if err != nil {
 			if statusJSON {
 				out, _ := json.MarshalIndent(map[string]string{
@@ -76,7 +76,10 @@ var statusCmd = &cobra.Command{
 			return nil
 		}
 
-		cp, _ := db.GetLatestCheckpoint(cmd.Context(), database, statusTaskID)
+		cp, err := db.GetLatestCheckpoint(cmd.Context(), database, statusTaskID)
+		if err != nil {
+			return fmt.Errorf("failed to get latest checkpoint: %w", err)
+		}
 
 		// Text output formatting
 		fmt.Println("======================================================================")
