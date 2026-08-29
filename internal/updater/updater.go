@@ -26,8 +26,9 @@ type updateState struct {
 }
 
 type githubRelease struct {
-	TagName string `json:"tag_name"`
-	Body    string `json:"body"`
+	TagName     string    `json:"tag_name"`
+	Body        string    `json:"body"`
+	PublishedAt time.Time `json:"published_at"`
 }
 
 // CheckForUpdates checks GitHub for a new release. It rate-limits itself to once per 24 hours.
@@ -88,7 +89,11 @@ func CheckForUpdates(currentVersion string) {
 
 	// If latest is logically greater than current
 	if semver.Compare(latestVersion, currentVersion) > 0 {
-		promptUpdate(currentVersion, latestVersion, release.Body)
+		// Buffer period: Don't prompt users immediately after a release.
+		// Wait 24 hours so the author has time to fix critical bugs.
+		if time.Since(release.PublishedAt) >= 24*time.Hour {
+			promptUpdate(currentVersion, latestVersion, release.Body)
+		}
 	}
 
 	// 4. Update the timestamp
