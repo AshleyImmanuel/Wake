@@ -35,6 +35,9 @@ type Client interface {
 	// GetDiff returns textual diff for staged or unstaged changes.
 	GetDiff(ctx context.Context, repoPath string, staged bool) (string, error)
 
+	// GetFileDiff returns textual diff for a specific file.
+	GetFileDiff(ctx context.Context, repoPath string, filePath string) (string, error)
+
 	// GetDiffBetween returns textual diff between two commit hashes.
 	GetDiffBetween(ctx context.Context, repoPath string, fromCommit, toCommit string) (string, error)
 
@@ -293,4 +296,23 @@ func (c *client) IsAncestor(ctx context.Context, repoPath string, ancestorCommit
 	}
 
 	return false, err
+}
+
+// GetFileDiff returns textual diff for a specific file, checking unstaged then staged changes.
+func (c *client) GetFileDiff(ctx context.Context, repoPath string, filePath string) (string, error) {
+	// Check unstaged first
+	stdout, _, err := c.runner.Run(ctx, repoPath, "diff", "--", filePath)
+	if err != nil {
+		return "", err
+	}
+	if len(stdout) > 0 {
+		return string(stdout), nil
+	}
+	
+	// Check staged if unstaged is empty
+	stdout, _, err = c.runner.Run(ctx, repoPath, "diff", "--staged", "--", filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(stdout), nil
 }
