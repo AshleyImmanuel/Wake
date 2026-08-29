@@ -32,7 +32,7 @@ var pruneCmd = &cobra.Command{
 		if err != nil {
 			repoRoot = targetDir
 		}
-		
+
 		database, err := db.InitDB(repoRoot)
 		if err != nil {
 			return err
@@ -70,7 +70,7 @@ var pruneCmd = &cobra.Command{
 		fmt.Printf("\nSuccessfully pruned database.\n")
 		fmt.Printf("- Deleted Checkpoints: %d\n", stats.DeletedCheckpoints)
 		fmt.Printf("- Deleted Events: %d\n", stats.DeletedEvents)
-		
+
 		return nil
 	},
 }

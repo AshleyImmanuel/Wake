@@ -69,8 +69,6 @@ func TestHandleToolCall_Resume(t *testing.T) {
 	assert.Len(t, res.Content, 1)
 }
 
-
-
 func TestServer_ToolsCall_Success(t *testing.T) {
 	svc := &mockTaskService{}
 	srv := NewServer(svc, ".")

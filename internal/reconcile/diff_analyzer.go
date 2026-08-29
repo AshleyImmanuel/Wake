@@ -24,7 +24,7 @@ func IsSemanticChange(diff string) bool {
 		if !strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "-") {
 			continue
 		}
-		
+
 		// Ignore diff header lines like +++ b/file or --- a/file
 		if strings.HasPrefix(line, "+++") || strings.HasPrefix(line, "---") {
 			continue
@@ -53,7 +53,7 @@ func IsSemanticChange(diff string) bool {
 
 func isCommentLine(content string) bool {
 	content = strings.ToLower(content)
-	
+
 	prefixes := []string{
 		"//",   // Go, C, C++, Java, JS, TS, Rust
 		"/*",   // Block comment start
@@ -65,7 +65,7 @@ func isCommentLine(content string) bool {
 		"\"",   // Python docstrings
 		"\"\"\"",
 		"'''",
-		"--",   // SQL, Lua, Haskell
+		"--", // SQL, Lua, Haskell
 	}
 
 	for _, prefix := range prefixes {
@@ -83,13 +83,13 @@ func isCommentLine(content string) bool {
 func IsSemanticChangeGoAST(oldCode, newCode string) bool {
 	oldNorm, err1 := normalizeGoCode(oldCode)
 	newNorm, err2 := normalizeGoCode(newCode)
-	
+
 	// If the code doesn't compile/parse, fallback to assuming it's a semantic change
 	if err1 != nil || err2 != nil {
 		return true
 	}
-	
-	// If the normalized AST strings match, it means 100% of the changes 
+
+	// If the normalized AST strings match, it means 100% of the changes
 	// were strictly non-semantic (comments or whitespace).
 	return oldNorm != newNorm
 }
@@ -111,5 +111,3 @@ func normalizeGoCode(src string) (string, error) {
 
 	return buf.String(), nil
 }
-
-

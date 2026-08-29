@@ -42,16 +42,16 @@ func TestClient_GetState(t *testing.T) {
 	defer cancel()
 
 	client := NewClient(nil)
-	
+
 	// Create a dummy repo in a temp dir
 	tempDir, err := os.MkdirTemp("", "wake-git-test")
 	require.NoError(t, err)
 	defer os.RemoveAll(tempDir)
-	
+
 	// This should fail gracefully or return empty state since it's not a git repo yet
 	state, err := client.GetState(ctx, tempDir)
 	require.NoError(t, err) // the command might return error, but our wrapper might handle it. Wait, GetState errors if not a repo.
-	
+
 	// Actually, GetState will error if it's not a git repo.
 	assert.Empty(t, state.CommitHash)
 }
@@ -61,10 +61,10 @@ func TestClient_GetRepoRoot(t *testing.T) {
 	defer cancel()
 
 	client := NewClient(nil)
-	
+
 	dir, err := os.Getwd()
 	require.NoError(t, err)
-	
+
 	root, err := client.GetRepoRoot(ctx, dir)
 	require.NoError(t, err)
 	assert.Contains(t, filepath.Clean(dir), filepath.Clean(root)) // root is a prefix of dir

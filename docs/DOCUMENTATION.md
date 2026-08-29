@@ -91,11 +91,17 @@ To integrate Wake into your agent, implement this exact lifecycle:
 2. **On Tool Execution (Post-Action):**
    Every time the AI executes a `WriteFile` or `RunCommand` tool, execute `wake checkpoint` in the background.
 
-3. **On Stop (Session End):**
-   No action required. The state is safely preserved on disk.
+### 4. Zero-Config Embedded File Watcher
+Wake's `mcp` server natively embeds a lightweight, debounced file watcher. When an IDE (Cursor, Claude Desktop, Antigravity) connects to the MCP server, this background goroutine automatically runs. If you (or an AI without hooks) modify files and then go idle for a few seconds, the daemon automatically synthesizes a background checkpoint. 
 
 ### Native Antigravity Integration
-If you are using the Antigravity CLI, you do not need to write code. Simply create an `.agents/hooks.json` file in your repository:
+If you are using the Antigravity IDE, you do not need to write code or configure hooks manually. Simply run:
+
+```bash
+wake setup --antigravity
+```
+
+This will auto-generate `.agents/mcp_config.json` to register the MCP server, and an `.agents/hooks.json` file which forces the IDE to auto-checkpoint upon every file write. The hook looks like this:
 
 ```json
 {

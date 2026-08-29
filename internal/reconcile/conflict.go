@@ -1,9 +1,9 @@
 package reconcile
 
 import (
-	"strings"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/state"
+	"strings"
 )
 
 // matchesConstraint determines if a changed file violates a given constraint string.
@@ -89,4 +89,3 @@ func getDeletedFiles(repo git.RepositoryState) []string {
 	}
 	return deduplicateStrings(deleted)
 }
-
