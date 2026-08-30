@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/wake/wake/internal/db"
 	"github.com/wake/wake/internal/git"
-	"github.com/spf13/cobra"
+	"github.com/wake/wake/internal/service"
 )
 
 var (
@@ -36,17 +36,13 @@ var historyCmd = &cobra.Command{
 		}
 		defer database.Close()
 
-		cp, err := db.GetLatestCheckpoint(context.Background(), database, historyTaskID)
-		if err != nil {
-			return fmt.Errorf("no active task found")
-		}
-
-		events, err := db.GetEvents(context.Background(), database, cp.TaskID.String())
+		svc := service.NewTaskService(database, gitClient)
+		events, err := svc.GetHistory(cmd.Context(), historyTaskID, 0)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("Event History for Task: %s\n", cp.TaskID.String())
+		fmt.Printf("Event History for Task\n") // We omit taskID since svc handles empty
 		fmt.Println("--------------------------------------------------")
 		for _, e := range events {
 			fmt.Printf("[%s] %s\n", e.Timestamp.Format("15:04:05"), e.Type)

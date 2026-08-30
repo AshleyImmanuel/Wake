@@ -1,17 +1,15 @@
 package cmd
 
 import (
-	"context"
-	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"github.com/wake/wake/internal/db"
 	"github.com/wake/wake/internal/git"
 	"github.com/wake/wake/internal/reconcile"
-	"github.com/spf13/cobra"
+	"github.com/wake/wake/internal/service"
 )
 
 var (
@@ -25,131 +23,125 @@ var statusCmd = &cobra.Command{
 	Short: "Show the current execution state and reconciliation status of the active task",
 	Long:  "Compares the latest saved task checkpoint against live Git repository state to evaluate if the state is SAFE, STALE, or in CONFLICT.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runStatus(cmd.Context(), statusDir, statusTaskID, statusJSON)
-	},
-}
-
-func runStatus(ctx context.Context, targetDir, taskIDStr string, outputJSON bool) error {
-	if targetDir == "" {
-		var err error
-		targetDir, err = os.Getwd()
-		if err != nil {
-			return fmt.Errorf("failed to get current working directory: %w", err)
+		if statusDir == "" {
+			var err error
+			statusDir, err = os.Getwd()
+			if err != nil {
+				return fmt.Errorf("failed to get current working directory: %w", err)
+			}
 		}
-	}
 
-	gitClient := git.NewClient(nil)
-	repoRoot, err := gitClient.GetRepoRoot(ctx, targetDir)
-	if err != nil {
-		return fmt.Errorf("git repository root not found at '%s': %w", targetDir, err)
-	}
+		gitClient := git.NewClient(nil)
+		repoRoot, err := gitClient.GetRepoRoot(cmd.Context(), statusDir)
+		if err != nil {
+			return fmt.Errorf("git repository root not found at '%s': %w", statusDir, err)
+		}
 
-	database, err := db.InitDB(repoRoot)
-	if err != nil {
-		return fmt.Errorf("failed to initialize WAKE database: %w", err)
-	}
-	defer database.Close()
+		database, err := db.InitDB(repoRoot)
+		if err != nil {
+			return fmt.Errorf("failed to initialize WAKE database: %w", err)
+		}
+		defer database.Close()
 
-	cp, err := db.GetLatestCheckpoint(ctx, database, taskIDStr)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			if outputJSON {
+		svc := service.NewTaskService(database, gitClient)
+		result, err := svc.GetStatus(cmd.Context(), service.StatusRequest{
+			TaskID: statusTaskID,
+			Dir:    statusDir,
+		})
+		
+		if err != nil {
+			if statusJSON {
 				out, _ := json.MarshalIndent(map[string]string{
 					"status":  "UNKNOWN",
-					"message": "No active task checkpoint found. Run 'WAKE checkpoint' first.",
+					"message": "No active task checkpoint found or error. Run 'WAKE checkpoint' first.",
 				}, "", "  ")
 				fmt.Println(string(out))
 				return nil
 			}
 			fmt.Println("======================================================================")
-			fmt.Println("WAKE STATUS: NO CHECKPOINT FOUND")
+			fmt.Println("WAKE STATUS: NO CHECKPOINT FOUND OR ERROR")
 			fmt.Println("======================================================================")
-			fmt.Println("No active checkpoint found in database.")
+			fmt.Printf("Error: %v\n", err)
 			fmt.Println("Run 'WAKE checkpoint' to create an initial state snapshot.")
 			fmt.Println("======================================================================")
 			return nil
 		}
-		return fmt.Errorf("failed to load checkpoint from database: %w", err)
-	}
 
-	// Reconcile checkpoint against live repository
-	result, err := reconcile.ReconcileRepo(ctx, *cp, gitClient, repoRoot, nil)
-	if err != nil {
-		return fmt.Errorf("failed to reconcile repository: %w", err)
-	}
-
-	if outputJSON {
-		out, err := json.MarshalIndent(result, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to format json output: %w", err)
+		if statusJSON {
+			out, err := json.MarshalIndent(result, "", "  ")
+			if err != nil {
+				return fmt.Errorf("failed to format json output: %w", err)
+			}
+			fmt.Println(string(out))
+			return nil
 		}
-		fmt.Println(string(out))
+
+		cp, _ := db.GetLatestCheckpoint(cmd.Context(), database, statusTaskID)
+
+		// Text output formatting
+		fmt.Println("======================================================================")
+		fmt.Println("WAKE TASK RECONCILIATION REPORT")
+		fmt.Println("======================================================================")
+		fmt.Printf("Task ID:            %s\n", cp.TaskID.String())
+		if cp.StateData.Objective != "" {
+			fmt.Printf("Objective:          %s\n", cp.StateData.Objective)
+		}
+		fmt.Printf("Status:             [%s]\n", result.Status)
+		fmt.Printf("Confidence:         %s\n", result.ConfidenceLevel)
+		if result.Reason != "" {
+			fmt.Printf("Evaluation Reason:  %s\n", result.Reason)
+		}
+
+		fmt.Println("\n--- Repository State ---")
+		fmt.Printf("Checkpoint Commit:  %s\n", result.CheckpointCommit)
+		fmt.Printf("Current Commit:     %s\n", result.CurrentCommit)
+		branchMatchText := "Yes"
+		if !result.BranchMatch {
+			branchMatchText = "No (Mismatch)"
+		}
+		fmt.Printf("Branch Match:       %s\n", branchMatchText)
+
+		fmt.Println("\n--- Evaluation Summary ---")
+		fmt.Printf("Total Changed Files:   %d\n", len(result.ChangedFiles))
+		fmt.Printf("Task-Related Changes:  %d\n", len(result.TaskRelatedChanges))
+		fmt.Printf("Unrelated Changes:     %d\n", len(result.UnrelatedChanges))
+		fmt.Printf("Constraint Violations: %d\n", len(result.ConstraintViolations))
+		fmt.Printf("Invalidated Claims:    %d\n", len(result.InvalidatedClaims))
+
+		if len(result.ConstraintViolations) > 0 {
+			fmt.Println("\n--- Constraint Violations ---")
+			for _, v := range result.ConstraintViolations {
+				fmt.Printf(" [!] %s\n", v)
+			}
+		}
+
+		if len(result.InvalidatedClaims) > 0 {
+			fmt.Println("\n--- Invalidated Claims ---")
+			for _, c := range result.InvalidatedClaims {
+				fmt.Printf(" [!] %s\n", c)
+			}
+		}
+
+		if len(result.ChangedFiles) > 0 {
+			fmt.Println("\n--- Changed Files ---")
+			for _, f := range result.ChangedFiles {
+				fmt.Printf(" [*] %s\n", f)
+			}
+		}
+
+		fmt.Println("\n--- Guidance ---")
+		switch result.Status {
+		case reconcile.StatusSafe:
+			fmt.Println("[SAFE] Working tree is fully synchronized with checkpoint. Safe to continue agent execution.")
+		case reconcile.StatusStale:
+			fmt.Println("[STALE] Repository has drifted without violating constraints. State refresh recommended.")
+		case reconcile.StatusConflict:
+			fmt.Println("[CONFLICT] Critical constraint violation or claim invalidation detected. Manual review required.")
+		}
+		fmt.Println("======================================================================")
+
 		return nil
-	}
-
-	// Text output formatting
-	fmt.Println("======================================================================")
-	fmt.Println("WAKE TASK RECONCILIATION REPORT")
-	fmt.Println("======================================================================")
-	fmt.Printf("Task ID:            %s\n", cp.TaskID.String())
-	if cp.StateData.Objective != "" {
-		fmt.Printf("Objective:          %s\n", cp.StateData.Objective)
-	}
-	fmt.Printf("Status:             [%s]\n", result.Status)
-	fmt.Printf("Confidence:         %s\n", result.ConfidenceLevel)
-	if result.Reason != "" {
-		fmt.Printf("Evaluation Reason:  %s\n", result.Reason)
-	}
-
-	fmt.Println("\n--- Repository State ---")
-	fmt.Printf("Checkpoint Commit:  %s\n", result.CheckpointCommit)
-	fmt.Printf("Current Commit:     %s\n", result.CurrentCommit)
-	branchMatchText := "Yes"
-	if !result.BranchMatch {
-		branchMatchText = "No (Mismatch)"
-	}
-	fmt.Printf("Branch Match:       %s\n", branchMatchText)
-
-	fmt.Println("\n--- Evaluation Summary ---")
-	fmt.Printf("Total Changed Files:   %d\n", len(result.ChangedFiles))
-	fmt.Printf("Task-Related Changes:  %d\n", len(result.TaskRelatedChanges))
-	fmt.Printf("Unrelated Changes:     %d\n", len(result.UnrelatedChanges))
-	fmt.Printf("Constraint Violations: %d\n", len(result.ConstraintViolations))
-	fmt.Printf("Invalidated Claims:    %d\n", len(result.InvalidatedClaims))
-
-	if len(result.ConstraintViolations) > 0 {
-		fmt.Println("\n--- Constraint Violations ---")
-		for _, v := range result.ConstraintViolations {
-			fmt.Printf(" [!] %s\n", v)
-		}
-	}
-
-	if len(result.InvalidatedClaims) > 0 {
-		fmt.Println("\n--- Invalidated Claims ---")
-		for _, c := range result.InvalidatedClaims {
-			fmt.Printf(" [!] %s\n", c)
-		}
-	}
-
-	if len(result.ChangedFiles) > 0 {
-		fmt.Println("\n--- Changed Files ---")
-		for _, f := range result.ChangedFiles {
-			fmt.Printf(" [*] %s\n", f)
-		}
-	}
-
-	fmt.Println("\n--- Guidance ---")
-	switch result.Status {
-	case reconcile.StatusSafe:
-		fmt.Println("[SAFE] Working tree is fully synchronized with checkpoint. Safe to continue agent execution.")
-	case reconcile.StatusStale:
-		fmt.Println("[STALE] Repository has drifted without violating constraints. State refresh recommended.")
-	case reconcile.StatusConflict:
-		fmt.Println("[CONFLICT] Critical constraint violation or claim invalidation detected. Manual review required.")
-	}
-	fmt.Println("======================================================================")
-
-	return nil
+	},
 }
 
 func init() {

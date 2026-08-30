@@ -1,14 +1,13 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 
-	"github.com/wake/wake/internal/db"
-	"github.com/wake/wake/internal/events"
-	"github.com/wake/wake/internal/git"
 	"github.com/spf13/cobra"
+	"github.com/wake/wake/internal/db"
+	"github.com/wake/wake/internal/git"
+	"github.com/wake/wake/internal/service"
 )
 
 var objectiveTaskID string
@@ -31,20 +30,9 @@ var objectiveCmd = &cobra.Command{
 		}
 		defer database.Close()
 
-		cp, err := db.GetLatestCheckpoint(context.Background(), database, objectiveTaskID)
-		if err != nil {
-			return fmt.Errorf("no active task found to update")
-		}
-
 		newObjective := args[0]
-		
-		// 1. Log the new objective as an event
-		ev := events.NewEvent(cp.TaskID, events.TaskStarted, map[string]interface{}{
-			"objective": newObjective,
-			"note":      "Human manually pivoted the objective",
-		})
-		
-		if err := db.SaveEvent(context.Background(), database, ev); err != nil {
+		svc := service.NewTaskService(database, gitClient)
+		if err := svc.UpdateObjective(cmd.Context(), objectiveTaskID, newObjective); err != nil {
 			return err
 		}
 		
