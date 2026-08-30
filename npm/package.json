@@ -20,7 +20,7 @@
     "mcp"
   ],
   "author": "The Wake Authors",
-  "license": "Proprietary",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Wake-Engine/Wake/issues"
   },

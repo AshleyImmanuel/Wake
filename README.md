@@ -6,7 +6,7 @@
 <p align="center"><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-red.svg" alt="License: Proprietary"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License: MIT"></a>
   <a href="https://github.com/Wake-Engine/Wake/releases"><img src="https://img.shields.io/badge/Version-v1.2.0-blue.svg" alt="Version"></a>
   <a href="https://www.npmjs.com/package/wake-engine"><img src="https://img.shields.io/npm/v/wake-engine?label=npm&amp;color=CB3837" alt="npm"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
@@ -316,7 +316,6 @@ Wake is built entirely in Go for cross-platform binary distribution.
 
 ## Copyright & License
 
-**Copyright (c) 2026 The Wake Authors. All Rights Reserved.**
+Copyright © 2026 The Wake Authors.
 
-This software is proprietary. You may not use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software without express written permission. See the [LICENSE](LICENSE) file for more information.
- 
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.

@@ -1,0 +1,308 @@
+{
+	"Golang errors": {},
+	"Issues": [
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\updater\\updater.go",
+			"code": "42: \tvar state updateState\n43: \tif b, err := os.ReadFile(statePath); err == nil {\n44: \t\t_ = json.Unmarshal(b, \u0026state)\n",
+			"line": "43",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\stash\\stash.go",
+			"code": "103: \n104: \tout, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)\n105: \tif err != nil {\n",
+			"line": "104",
+			"column": "14",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\stash\\stash.go",
+			"code": "93: func copyFile(src, dst string) error {\n94: \tin, err := os.Open(src)\n95: \tif err != nil {\n",
+			"line": "94",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\stash\\stash.go",
+			"code": "79: func hashFile(path string) (string, error) {\n80: \tf, err := os.Open(path)\n81: \tif err != nil {\n",
+			"line": "80",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\reconcile\\drift.go",
+			"code": "24: \tlogPath := filepath.Join(repoRoot, \".wake\", \"attribution.log\")\n25: \tfile, err := os.Open(logPath)\n26: \n",
+			"line": "25",
+			"column": "15",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\hashfs\\client.go",
+			"code": "102: func hashFile(path string) (string, error) {\n103: \tf, err := os.Open(path)\n104: \tif err != nil {\n",
+			"line": "103",
+			"column": "12",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\hashfs\\client.go",
+			"code": "42: \toldHashes := make(map[string]string)\n43: \tif data, err := os.ReadFile(indexPath); err == nil {\n44: \t\tjson.Unmarshal(data, \u0026oldHashes)\n",
+			"line": "43",
+			"column": "18",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "22",
+				"url": "https://cwe.mitre.org/data/definitions/22.html"
+			},
+			"rule_id": "G304",
+			"details": "Potential file inclusion via variable",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\cmd\\mark.go",
+			"code": "59: \n60: \t\tf, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)\n61: \t\tif err != nil {\n",
+			"line": "60",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null,
+			"autofix": "Consider using os.Root to scope file access under a fixed root (Go \u003e=1.24). Prefer root.Open/root.Stat over os.Open/os.Stat to prevent directory traversal."
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G301",
+			"details": "Expect directory permissions to be 0750 or less",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\cmd\\install.go",
+			"code": "61: \n62: \t\tif err := os.MkdirAll(targetDir, 0755); err != nil {\n63: \t\t\tfmt.Printf(\"Error creating directory %s: %v\\n\", targetDir, err)\n",
+			"line": "62",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "MEDIUM",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "276",
+				"url": "https://cwe.mitre.org/data/definitions/276.html"
+			},
+			"rule_id": "G306",
+			"details": "Expect WriteFile permissions to be 0600 or less",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\cmd\\install.go",
+			"code": "67: \t\tinstrPath := filepath.Join(targetDir, \"instructions.md\")\n68: \t\tif err := os.WriteFile(instrPath, []byte(wakeInstructions), 0644); err != nil {\n69: \t\t\tfmt.Printf(\"Error writing instructions.md: %v\\n\", err)\n",
+			"line": "68",
+			"column": "13",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\reconcile\\drift.go",
+			"code": "55: \t\t\tfile.Seek(cursor, 0) // io.SeekStart = 0\n56: \t\t\tfile.Read(buf[:readSize])\n57: \n",
+			"line": "56",
+			"column": "4",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\reconcile\\drift.go",
+			"code": "54: \n55: \t\t\tfile.Seek(cursor, 0) // io.SeekStart = 0\n56: \t\t\tfile.Read(buf[:readSize])\n",
+			"line": "55",
+			"column": "4",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\hashfs\\client.go",
+			"code": "86: \t\tos.MkdirAll(filepath.Dir(indexPath), 0700)\n87: \t\tos.WriteFile(indexPath, data, 0600)\n88: \t}\n",
+			"line": "87",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\hashfs\\client.go",
+			"code": "85: \tif data, err := json.Marshal(newHashes); err == nil {\n86: \t\tos.MkdirAll(filepath.Dir(indexPath), 0700)\n87: \t\tos.WriteFile(indexPath, data, 0600)\n",
+			"line": "86",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\hashfs\\client.go",
+			"code": "50: \n51: \tfilepath.WalkDir(repoPath, func(path string, d fs.DirEntry, err error) error {\n52: \t\tif err != nil || d.IsDir() {\n53: \t\t\tif d != nil \u0026\u0026 d.IsDir() {\n54: \t\t\t\tname := d.Name()\n55: \t\t\t\tif name == \".wake\" || name == \".git\" || name == \"node_modules\" {\n56: \t\t\t\t\treturn filepath.SkipDir\n57: \t\t\t\t}\n58: \t\t\t}\n59: \t\t\treturn nil\n60: \t\t}\n61: \n62: \t\trel, err := filepath.Rel(repoPath, path)\n63: \t\tif err != nil {\n64: \t\t\treturn nil\n65: \t\t}\n66: \t\trel = filepath.ToSlash(rel)\n67: \n68: \t\thash, err := hashFile(path)\n69: \t\tif err != nil {\n70: \t\t\treturn nil\n71: \t\t}\n72: \t\tnewHashes[rel] = hash\n73: \n74: \t\tif oldHash, exists := oldHashes[rel]; exists {\n75: \t\t\tif oldHash != hash {\n76: \t\t\t\tmodified = append(modified, rel)\n77: \t\t\t}\n78: \t\t} else {\n79: \t\t\tuntracked = append(untracked, rel)\n80: \t\t}\n81: \t\treturn nil\n82: \t})\n83: \n",
+			"line": "51-82",
+			"column": "2",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\internal\\hashfs\\client.go",
+			"code": "43: \tif data, err := os.ReadFile(indexPath); err == nil {\n44: \t\tjson.Unmarshal(data, \u0026oldHashes)\n45: \t}\n",
+			"line": "44",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\cmd\\mcp.go",
+			"code": "75: \t\t\t\t\t\tif getModifiedFilesMaxTime(ctx, gitClient, repoRoot).Equal(currentModTime) {\n76: \t\t\t\t\t\t\tsvc.CreateCheckpoint(ctx, service.CheckpointRequest{\n77: \t\t\t\t\t\t\t\tObjective: \"Auto-checkpoint by Wake MCP Daemon\",\n78: \t\t\t\t\t\t\t\tDir:       repoRoot,\n79: \t\t\t\t\t\t\t})\n80: \t\t\t\t\t\t\tlastCheckpointModTime = currentModTime\n",
+			"line": "76-79",
+			"column": "8",
+			"nosec": false,
+			"suppressions": null
+		},
+		{
+			"severity": "LOW",
+			"confidence": "HIGH",
+			"cwe": {
+				"id": "703",
+				"url": "https://cwe.mitre.org/data/definitions/703.html"
+			},
+			"rule_id": "G104",
+			"details": "Errors unhandled",
+			"file": "C:\\Users\\USER\\Desktop\\Wake\\cmd\\mark.go",
+			"code": "57: \t\tlogPath := filepath.Join(targetDir, \".wake\", \"attribution.log\")\n58: \t\tos.MkdirAll(filepath.Dir(logPath), 0700)\n59: \n",
+			"line": "58",
+			"column": "3",
+			"nosec": false,
+			"suppressions": null
+		}
+	],
+	"Stats": {
+		"files": 59,
+		"lines": 7139,
+		"nosec": 4,
+		"found": 18
+	},
+	"GosecVersion": "dev"
+}
