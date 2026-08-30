@@ -16,33 +16,33 @@
 
 <br/>
 
-## The Problem
+## The Challenge
 
-By 2026, AI coding agents (like Claude Code, Aider, and Cursor) are incredibly capable, but they suffer from **Amnesia and Context Drift**. 
+By 2026, autonomous AI coding agents (such as Claude Code, Aider, and Cursor) possess immense capabilities, yet they are hindered by **Context Drift and State Fragmentation**. 
 
-When you close your laptop, restart your IDE, or run into a token limit, the AI session dies. When you restart it, you either:
-1. Burn thousands of tokens re-feeding it the entire chat transcript.
-2. Watch it hallucinate because it forgot its original constraints.
-3. **Worst of all:** If *you* (the human) or *another AI tool* manually edit code while the AI is asleep, the AI wakes up totally oblivious to your changes, leading to massive merge conflicts and broken features.
+When an IDE is restarted, a terminal session ends, or token limits are reached, the agent's contextual memory is lost. Upon resumption, developers face critical inefficiencies:
+1. Significant token expenditure to rebuild context from historical chat transcripts.
+2. Diminished accuracy due to degraded context constraints.
+3. **Critical Vulnerability:** If a human developer or a secondary AI agent modifies the codebase while the primary agent is inactive, the primary agent resumes unaware of the divergence, leading to destructive overwrite conflicts.
 
-While tools like LangGraph save state, and Devin runs in expensive persistent cloud VMs, **neither actively diffs the AI's brain against the physical repository to catch human or cross-agent interference.**
+While cloud-based solutions exist, **they fail to continuously reconcile internal memory states against physical repository modifications**, leaving localized multi-agent and human-agent environments exposed to data loss.
 
 ## The Solution
 
-**Wake** is a local-first CLI tool and middleware that acts as a referee between your AI agent's "brain" and the actual repository. 
+**Wake** is a local-first middleware engine that serves as the definitive synchronization layer between an autonomous AI agent and your physical repository. 
 
-It anchors the AI's memory to the physical codebase using an event-sourced SQLite ledger. When a new AI session boots up, Wake diffs the repository against the AI's last memory and generates a highly condensed, **token-efficient ~150-token Recovery Packet**. This packet tells the AI exactly what it completed, what is blocked, and which files changed while it was asleep.
+It anchors the agent's memory to the local codebase using a highly performant, event-sourced SQLite ledger. When a new session is initialized, Wake calculates the differential between the repository and the agent's last known state, synthesizing a dense, **~150-token State Recovery Packet**. This packet definitively instructs the agent on completed milestones, active blockers, and external modifications.
 
-## What Wake Does Today
+## Key Capabilities
 
-- **Multi-Tool & AI Handoff Support**: Run multiple agents (e.g., Aider, Claude Code, custom scripts) in the same workspace. Wake handles the state synchronization so they don't step on each other's toes.
-- **AI-Interference Resilience**: If a human or another AI edits a file while the primary agent is offline, Wake detects the drift. It flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` verdicts to ensure the agent is aware of the exact changes before it resumes coding.
-- **Token-Efficient Recovery**: Instead of injecting thousands of lines of chat history to restart a session, Wake compiles the task context into a dense ~150-token recovery packet.
-- **Git-Aware State Tracking**: Wake anchors state to your Git repository, tracking commits, branches, and working tree changes. Non-Git mode with internal file hashing is planned for v1.1.
-- **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers locally. Uses WAL mode with serialized connection pooling for safe concurrent access by multiple tools.
-- **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
-- **Pre-Checkpoint Guard**: Blocks blind checkpoints when unreviewed modifications or untracked files exist in the working tree.
-- **Feature Pivot Support**: Run `wake objective "New Goal"` to safely pivot the AI's memory without a full reset.
+- **Multi-Agent Orchestration**: Operate multiple agents concurrently within the same workspace. Wake orchestrates state synchronization to prevent collision.
+- **Interference Resilience**: If human or secondary AI modifications occur while the primary agent is offline, Wake detects the drift. It flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` verdicts to ensure the agent reconciles exact changes prior to execution.
+- **Token-Efficient Context Recovery**: Rather than injecting extensive chat histories, Wake synthesizes a highly condensed ~150-token recovery packet.
+- **Git-Aware State Tracking**: Wake seamlessly anchors internal state to Git commit SHAs, branch tracking, and working tree indices. 
+- **Local-First SQLite Engine**: Tracks objectives and milestones locally utilizing WAL mode and serialized connection pooling for thread-safe concurrent access.
+- **Hard Constraint Enforcement**: If an agent is instructed to avoid specific files, and external modifications occur, Wake throws a hard `[CONFLICT]` to guarantee work preservation.
+- **Pre-Checkpoint Safeguards**: Blocks state snapshots when unreviewed modifications or untracked files are detected in the working directory.
+- **Dynamic Feature Pivots**: Execute `wake objective "New Goal"` to safely transition the agent's state without a destructive reset.
 - **Universal MCP Server**: Built-in Model Context Protocol support (`wake mcp`). Seamlessly plug Wake into cloud-based AI agents (Claude Desktop, Cursor) or 100% local, free, air-gapped models (Ollama, LM Studio) for maximum privacy—with zero extra configuration.
 ## Quickstart
 
@@ -59,7 +59,7 @@ go build -o wake .
 
 ### Basic Workflow
 
-Wake is designed to wrap *any* AI coding agent. 
+Wake functions as universal middleware for autonomous agents. 
 
 **1. Initialize Wake in your repo:**
 ```bash
@@ -71,14 +71,14 @@ wake init
 wake checkpoint --objective "Migrate the database to PostgreSQL"
 ```
 
-**3. Check the Status (The AI's brain vs Reality):**
+**3. Audit the Synchronization Status:**
 ```bash
 wake status
 ```
 *Output: `[STALE] Repository has 2 uncommitted changed file(s).`*
 
-**4. Wake the AI back up:**
-Feed this output directly to your new agent session:
+**4. Resume the Agent:**
+Provide this output to a new agent session to initialize context:
 ```bash
 wake resume
 ```
@@ -88,9 +88,9 @@ wake resume
 wake history
 ```
 
-### Integrate via MCP (No Clone Required)
+### Integrate via MCP (Model Context Protocol)
 
-If you just want to plug Wake into your AI client (like Claude Desktop, Cursor, or Antigravity) without cloning the source code, you can run it on-the-fly! Just add this to your client's MCP configuration (requires Go to be installed):
+Wake seamlessly integrates with MCP-compatible clients (e.g., Claude Desktop, Cursor, Antigravity) natively. Add the following to your MCP configuration to execute Wake dynamically:
 
 ```json
 {
