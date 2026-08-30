@@ -13,8 +13,9 @@ import (
 )
 
 var (
-	resumeTaskID string
-	resumeDir    string
+	resumeTaskID    string
+	resumeSessionID string
+	resumeDir       string
 )
 
 var resumeCmd = &cobra.Command{
@@ -129,6 +130,7 @@ var resumeCmd = &cobra.Command{
 
 func init() {
 	resumeCmd.Flags().StringVar(&resumeTaskID, "task-id", "", "Task UUID to resume (optional)")
+	resumeCmd.Flags().StringVar(&resumeSessionID, "session", "", "Specific session UUID to resume (optional)")
 	resumeCmd.Flags().StringVar(&resumeDir, "dir", "", "Repository directory (defaults to current)")
 	rootCmd.AddCommand(resumeCmd)
 }

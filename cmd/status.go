@@ -83,6 +83,12 @@ var statusCmd = &cobra.Command{
 
 		// Text output formatting
 		fmt.Println("======================================================================")
+		fmt.Println("WAKE STATUS")
+		fmt.Println("======================================================================")
+
+		fmt.Println(service.FormatVisualStatus(cp))
+
+		fmt.Println("\n======================================================================")
 		fmt.Println("WAKE TASK RECONCILIATION REPORT")
 		fmt.Println("======================================================================")
 		fmt.Printf("Task ID:            %s\n", cp.TaskID.String())

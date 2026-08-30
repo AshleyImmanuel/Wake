@@ -23,19 +23,22 @@ const (
 
 // State represents the current execution state of a task (PRD Section 8.3 & 12).
 type State struct {
-	TaskID       uuid.UUID
-	Objective    string
-	Constraints  []string
-	Decisions    []Decision
-	Completed    []string
-	Current      string
-	Remaining    []string
-	Blocked      []Blocker
-	DoNotRepeat  []string
-	LastVerified string // e.g. Git commit hash
-	NextAction   string
-	Confidence   ConfidenceLevel
-	Files        map[string]string // File tracking for non-git projects
+	TaskID            uuid.UUID         `json:"task_id,omitempty"`
+	Objective         string            `json:"objective,omitempty"`
+	Constraints       []string          `json:"constraints,omitempty"`
+	Decisions         []Decision        `json:"decisions,omitempty"`
+	Completed         []string          `json:"completed,omitempty"`
+	Current           string            `json:"current,omitempty"`
+	Remaining         []string          `json:"remaining,omitempty"`
+	Blocked           []Blocker         `json:"blocked,omitempty"`
+	DoNotRepeat       []string          `json:"do_not_repeat,omitempty"`
+	LastVerified      string            `json:"last_verified,omitempty"`
+	NextAction        string            `json:"next_action,omitempty"`
+	Confidence        ConfidenceLevel   `json:"confidence,omitempty"`
+	Files             map[string]string `json:"files,omitempty"`
+	LastKnownAction   string            `json:"last_action,omitempty"`
+	LastCommand       string            `json:"last_command,omitempty"`
+	LastCommandResult string            `json:"last_command_result,omitempty"`
 }
 
 // Clone returns a deep copy of State to ensure thread safety.
@@ -74,23 +77,26 @@ func (s State) Clone() State {
 	return cloned
 }
 
+// Decision represents a recorded design choice.
 type Decision struct {
-	ID          string
-	Description string
-	Source      string // e.g., "Developer instruction", "Agent inferred"
-	Status      string // e.g., "ACTIVE", "REJECTED"
+	ID          string `json:"id,omitempty"`
+	Description string `json:"desc,omitempty"`
+	Source      string `json:"src,omitempty"`
+	Status      string `json:"status,omitempty"`
 }
 
+// Blocker represents an active or resolved impediment.
 type Blocker struct {
-	ID          string
-	Description string
-	Status      string // e.g., "ACTIVE", "RESOLVED"
+	ID          string `json:"id,omitempty"`
+	Description string `json:"desc,omitempty"`
+	Status      string `json:"status,omitempty"`
 }
 
 // Checkpoint represents a versioned snapshot of the state (PRD Section 8.4)
 type Checkpoint struct {
 	ID            uuid.UUID
 	TaskID        uuid.UUID
+	SessionID     uuid.UUID
 	Timestamp     string
 	Repository    string
 	Branch        string

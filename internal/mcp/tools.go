@@ -14,125 +14,92 @@ func getTools() []Tool {
 	return []Tool{
 		{
 			Name:        "wake_checkpoint",
-			Description: "Save workspace state snapshot",
+			Description: "Save state",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"task_id": map[string]interface{}{
-						"type":        "string",
-						"description": "Task ID",
-					},
-					"objective": map[string]interface{}{
-						"type":        "string",
-						"description": "Task objective",
-					},
-					"force": map[string]interface{}{
-						"type":        "boolean",
-						"description": "Force creation",
-					},
-					"tracked_files": map[string]interface{}{
-						"type": "array",
-						"items": map[string]interface{}{
-							"type": "string",
-						},
-						"description": "Files to track",
-					},
+					"task_id":       map[string]interface{}{"type": "string"},
+					"objective":     map[string]interface{}{"type": "string"},
+					"force":         map[string]interface{}{"type": "boolean"},
+					"tracked_files": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}},
 				},
 			},
 		},
 		{
 			Name:        "wake_status",
-			Description: "Get workspace reconciliation status",
+			Description: "Check status",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"task_id": map[string]interface{}{
-						"type":        "string",
-						"description": "Task ID",
-					},
+					"task_id": map[string]interface{}{"type": "string"},
 				},
 			},
 		},
 		{
 			Name:        "wake_resume",
-			Description: "Get compact recovery packet to continue a task",
+			Description: "Resume task",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"task_id": map[string]interface{}{
-						"type":        "string",
-						"description": "Task ID",
-					},
+					"task_id": map[string]interface{}{"type": "string"},
+				},
+			},
+		},
+		{
+			Name:        "wake_diff",
+			Description: "Compare states",
+			InputSchema: ToolInputSchema{
+				Type: "object",
+				Properties: map[string]interface{}{
+					"task_id": map[string]interface{}{"type": "string"},
+					"v1":      map[string]interface{}{"type": "number"},
+					"v2":      map[string]interface{}{"type": "number"},
 				},
 			},
 		},
 		{
 			Name:        "wake_history",
-			Description: "Get task event history",
+			Description: "Get history",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"task_id": map[string]interface{}{
-						"type":        "string",
-						"description": "Task ID",
-					},
-					"limit": map[string]interface{}{
-						"type":        "number",
-						"description": "Max events (default 50)",
-					},
+					"task_id": map[string]interface{}{"type": "string"},
+					"limit":   map[string]interface{}{"type": "number"},
 				},
 			},
 		},
 		{
 			Name:        "wake_update_objective",
-			Description: "Update task objective",
+			Description: "Update objective",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"task_id": map[string]interface{}{
-						"type":        "string",
-						"description": "Task ID",
-					},
-					"objective": map[string]interface{}{
-						"type":        "string",
-						"description": "New objective",
-					},
+					"task_id":   map[string]interface{}{"type": "string"},
+					"objective": map[string]interface{}{"type": "string"},
 				},
 				Required: []string{"task_id", "objective"},
 			},
 		},
 		{
 			Name:        "wake_record_event",
-			Description: "Record task event",
+			Description: "Log event",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"task_id": map[string]interface{}{
-						"type":        "string",
-						"description": "Task ID",
-					},
-					"event_type": map[string]interface{}{
-						"type":        "string",
-						"description": "Event type",
-					},
-					"payload": map[string]interface{}{
-						"type":        "object",
-						"description": "Event data",
-					},
+					"task_id":    map[string]interface{}{"type": "string"},
+					"event_type": map[string]interface{}{"type": "string"},
+					"payload":    map[string]interface{}{"type": "object"},
 				},
 				Required: []string{"task_id", "event_type"},
 			},
 		},
 		{
 			Name:        "wake_init",
-			Description: "Initialize Wake workspace",
+			Description: "Init Wake",
 			InputSchema: ToolInputSchema{
 				Type: "object",
 				Properties: map[string]interface{}{
-					"dir": map[string]interface{}{
-						"type":        "string",
-						"description": "Directory path",
-					},
+					"dir": map[string]interface{}{"type": "string"},
 				},
 			},
 		},
@@ -203,7 +170,27 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 		res, e := s.svc.ResumeTask(ctx, getString("task_id"))
 		err = e
 		if err == nil {
-			result = service.FormatResumePacket(res)
+			result = map[string]interface{}{
+				"state":    res.Checkpoint.StateData,
+				"status":   res.ReconciliationResult.Status,
+				"guidance": res.Guidance,
+			}
+		}
+
+	case "wake_diff":
+		taskID := getString("task_id")
+		v1 := 0
+		if val, ok := args["v1"].(float64); ok {
+			v1 = int(val)
+		}
+		v2 := 0
+		if val, ok := args["v2"].(float64); ok {
+			v2 = int(val)
+		}
+		res, e := s.svc.DiffCheckpoints(ctx, taskID, v1, v2)
+		err = e
+		if err == nil {
+			result = service.FormatDiff(*res)
 		}
 
 	case "wake_history":
@@ -273,7 +260,7 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 	if str, ok := result.(string); ok {
 		textOut = str
 	} else {
-		b, _ := json.MarshalIndent(result, "", "  ")
+		b, _ := json.Marshal(result) // Caveman: No indent, huge token savings
 		textOut = string(b)
 	}
 

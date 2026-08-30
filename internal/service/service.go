@@ -23,6 +23,7 @@ type TaskService interface {
 	GetStatus(ctx context.Context, req StatusRequest) (*reconcile.ReconciliationResult, error)
 	GetHistory(ctx context.Context, taskID string, limit int) ([]events.Event, error)
 	ResumeTask(ctx context.Context, taskID string) (*ResumePacket, error)
+	DiffCheckpoints(ctx context.Context, taskID string, v1, v2 int) (*state.StateDiff, error)
 	UpdateObjective(ctx context.Context, taskID string, objective string) error
 	RecordEvent(ctx context.Context, taskID string, eventType events.EventType, payload map[string]interface{}) (*events.Event, error)
 	InitWorkspace(ctx context.Context, dir string) error
@@ -128,7 +129,7 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 		}
 	}
 
-	commitEv := events.NewEvent(parsedTaskID, events.GitCommit, s.author, map[string]interface{}{
+	commitEv := events.NewEvent(parsedTaskID, uuid.Nil, events.GitCommit, s.author, map[string]interface{}{
 		"hash":   repoState.CommitHash,
 		"branch": repoState.Branch,
 		"clean":  repoState.IsClean,
@@ -138,6 +139,7 @@ func (s *taskService) CreateCheckpoint(ctx context.Context, req CheckpointReques
 	cp := state.Checkpoint{
 		ID:            uuid.New(),
 		TaskID:        parsedTaskID,
+		SessionID:     uuid.Nil,
 		Timestamp:     time.Now().UTC().Format(time.RFC3339),
 		Repository:    repoState.RootPath,
 		Branch:        repoState.Branch,
@@ -234,7 +236,7 @@ func (s *taskService) UpdateObjective(ctx context.Context, taskID string, object
 		return fmt.Errorf("no active task found to update")
 	}
 
-	ev := events.NewEvent(cp.TaskID, events.TaskStarted, s.author, map[string]interface{}{
+	ev := events.NewEvent(cp.TaskID, uuid.Nil, events.TaskStarted, s.author, map[string]interface{}{
 		"objective": objective,
 		"note":      "Human manually pivoted the objective",
 	})
@@ -264,7 +266,7 @@ func (s *taskService) RecordEvent(ctx context.Context, taskID string, eventType 
 		parsedTaskID = uuid.New()
 	}
 
-	ev := events.NewEvent(parsedTaskID, eventType, s.author, payload)
+	ev := events.NewEvent(parsedTaskID, uuid.Nil, eventType, s.author, payload)
 
 	if s.db != nil {
 		if err := db.SaveEvent(ctx, s.db, ev); err != nil {

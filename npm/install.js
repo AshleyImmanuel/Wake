@@ -91,6 +91,16 @@ async function install() {
         fs.unlinkSync(dest);
         
         console.log('Wake installed successfully!');
+        
+        console.log('\nWiring up IDE configurations...');
+        try {
+            // npm sets INIT_CWD to the original working directory where the user ran npm install
+            const targetDir = process.env.INIT_CWD || process.cwd();
+            execSync(`"${binPath}" setup`, { cwd: targetDir, stdio: 'inherit' });
+            console.log(`\nAuto-setup complete in ${targetDir}`);
+        } catch (setupErr) {
+            console.warn('\nWarning: Auto-setup failed. You may need to run "wake setup" manually in your project directory.');
+        }
     } catch(e) {
         console.error("Installation failed:", e.message);
         process.exit(1);

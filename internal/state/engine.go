@@ -149,6 +149,7 @@ func Reduce(taskID string, history []events.Event) State {
 			action := getString(payload, "action")
 			if filePath != "" {
 				currentState.Current = "Editing " + filePath
+				currentState.LastKnownAction = "Modified " + filePath
 				if action == "do_not_repeat" {
 					if !containsString(currentState.DoNotRepeat, filePath) {
 						currentState.DoNotRepeat = append(currentState.DoNotRepeat, filePath)
@@ -160,6 +161,17 @@ func Reduce(taskID string, history []events.Event) State {
 			cmd := getString(payload, "command")
 			if cmd != "" {
 				currentState.Current = "Executed: " + cmd
+				currentState.LastKnownAction = "Executed command"
+				currentState.LastCommand = cmd
+				if exitCode, ok := getInt(payload, "exit_code"); ok {
+					if exitCode == 0 {
+						currentState.LastCommandResult = "SUCCESS"
+					} else {
+						currentState.LastCommandResult = "FAILED"
+					}
+				} else {
+					currentState.LastCommandResult = "EXECUTED"
+				}
 			}
 			if next := getString(payload, "next_action"); next != "" {
 				currentState.NextAction = next
@@ -171,12 +183,18 @@ func Reduce(taskID string, history []events.Event) State {
 			suite := getString(payload, "suite", "test")
 			if suite != "" {
 				currentState.Current = "Running tests: " + suite
+				currentState.LastKnownAction = "Ran tests"
+				currentState.LastCommand = "Test suite: " + suite
+				currentState.LastCommandResult = "PENDING"
 			}
 
 		case events.TestPassed:
 			suite := getString(payload, "suite", "test")
 			if suite != "" {
 				currentState.Current = "Tests passed: " + suite
+				currentState.LastKnownAction = "Passed tests"
+				currentState.LastCommand = "Test suite: " + suite
+				currentState.LastCommandResult = "PASSED"
 			}
 			if next := getString(payload, "next_action"); next != "" {
 				currentState.NextAction = next
@@ -187,9 +205,15 @@ func Reduce(taskID string, history []events.Event) State {
 			if suite != "" {
 				currentState.Current = "Test failed: " + suite
 				currentState.NextAction = "Fix failing tests: " + suite
+				currentState.LastKnownAction = "Failed tests"
+				currentState.LastCommand = "Test suite: " + suite
+				currentState.LastCommandResult = "FAILED"
 			}
 			if errStr := getString(payload, "error"); errStr != "" {
 				currentState.NextAction = "Fix failing test: " + errStr
+				if currentState.LastCommandResult == "FAILED" {
+					currentState.LastCommandResult = "FAILED: " + errStr
+				}
 			}
 
 		case events.BlockerCreated:

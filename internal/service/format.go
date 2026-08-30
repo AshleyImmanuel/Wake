@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/AshleyImmanuel/Wake/internal/reconcile"
+	"github.com/AshleyImmanuel/Wake/internal/state"
 )
 
 // FormatResumePacket generates an ultra-minimal text block
@@ -84,4 +85,67 @@ func FormatResumePacket(packet *ResumePacket) string {
 	}
 
 	return sb.String()
+}
+
+// FormatVisualStatus generates a human-readable visual status for the CLI (PRD Section 6).
+func FormatVisualStatus(cp *state.Checkpoint) string {
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("Task:\n%s\n\n", cp.StateData.Objective))
+	if cp.StateData.Objective == "" {
+		sb.WriteString("Task:\n(No objective set)\n\n")
+	}
+
+	// Calculate Progress
+	completedCount := len(cp.StateData.Completed)
+	remainingCount := len(cp.StateData.Remaining)
+	blockedCount := 0
+	for _, b := range cp.StateData.Blocked {
+		if b.Status == "ACTIVE" {
+			blockedCount++
+		}
+	}
+	total := completedCount + remainingCount + blockedCount
+	percentage := 0
+	if total > 0 {
+		percentage = (completedCount * 100) / total
+	}
+
+	blocks := percentage / 10
+	bar := strings.Repeat("█", blocks) + strings.Repeat("░", 10-blocks)
+	sb.WriteString(fmt.Sprintf("Progress:\n%s %d%%\n\n", bar, percentage))
+
+	if len(cp.StateData.Completed) > 0 {
+		sb.WriteString("Completed:\n")
+		for _, c := range cp.StateData.Completed {
+			sb.WriteString(fmt.Sprintf("✓ %s\n", c))
+		}
+		sb.WriteString("\n")
+	}
+
+	if cp.StateData.Current != "" {
+		sb.WriteString("In progress:\n")
+		sb.WriteString(fmt.Sprintf("→ %s\n\n", cp.StateData.Current))
+	}
+
+	if blockedCount > 0 {
+		sb.WriteString("Blocker:\n")
+		for _, b := range cp.StateData.Blocked {
+			if b.Status == "ACTIVE" {
+				sb.WriteString(fmt.Sprintf("⚠ %s\n", b.Description))
+			}
+		}
+		sb.WriteString("\n")
+	}
+
+	if cp.StateData.NextAction != "" {
+		sb.WriteString("Next:\n")
+		sb.WriteString(fmt.Sprintf("→ %s\n", cp.StateData.NextAction))
+	}
+
+	if cp.StateData.LastCommandResult == "FAILED" {
+		sb.WriteString(fmt.Sprintf("\nLAST CRASH CONTEXT:\nCommand: %s\nResult: FAILED\n", cp.StateData.LastCommand))
+	}
+
+	return strings.TrimSpace(sb.String())
 }

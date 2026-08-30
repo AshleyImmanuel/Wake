@@ -20,7 +20,8 @@ func migrate(db *sql.DB) error {
 			type TEXT NOT NULL,
 			timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
 			payload TEXT NOT NULL, -- JSON payload
-			checksum TEXT NOT NULL DEFAULT ''
+			checksum TEXT NOT NULL DEFAULT '',
+			session_id TEXT DEFAULT '00000000-0000-0000-0000-000000000000'
 		);`,
 		`CREATE TABLE IF NOT EXISTS checkpoints (
 			id TEXT PRIMARY KEY,
@@ -33,6 +34,7 @@ func migrate(db *sql.DB) error {
 			repository TEXT DEFAULT '',
 			branch TEXT DEFAULT '',
 			checksum TEXT NOT NULL DEFAULT '',
+			session_id TEXT DEFAULT '00000000-0000-0000-0000-000000000000',
 			UNIQUE(task_id, state_version)
 		);`,
 		`CREATE INDEX IF NOT EXISTS idx_events_task_timestamp ON events (task_id, timestamp ASC);`,
@@ -52,6 +54,8 @@ func migrate(db *sql.DB) error {
 	_ = addColumnIfNotExists(tx, "events", "author", "TEXT DEFAULT ''")
 	_ = addColumnIfNotExists(tx, "events", "checksum", "TEXT DEFAULT ''")
 	_ = addColumnIfNotExists(tx, "checkpoints", "checksum", "TEXT DEFAULT ''")
+	_ = addColumnIfNotExists(tx, "events", "session_id", "TEXT DEFAULT '00000000-0000-0000-0000-000000000000'")
+	_ = addColumnIfNotExists(tx, "checkpoints", "session_id", "TEXT DEFAULT '00000000-0000-0000-0000-000000000000'")
 
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit migration transaction: %w", err)
