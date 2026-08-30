@@ -11,6 +11,8 @@
   [![Version](https://img.shields.io/badge/Version-v1.0--beta-green.svg)]()
 </div>
 
+> **⚠️ BETA RELEASE NOTICE:** Wake is currently in v1.0 Beta. The human-interference reconciliation engine is highly experimental. We deeply appreciate the developers and early adopters who are pressure-testing this in real-world scenarios and providing feedback to help make this the standard for AI agent state recovery!
+
 <br/>
 
 ## The Problem
