@@ -32,11 +32,11 @@ It safely anchors the AI's memory to the physical codebase using an event-source
 
 ## Features
 
-- 🧠 **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers without uploading your repo to a cloud VM.
-- 🔗 **Git Drift Reconciliation**: Actively compares the AI's memory against Git. Automatically flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` states.
-- 🛑 **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
-- ⚡ **Multi-Agent Safe**: Built with SQLite WAL mode. Run 5 different AI agents in the same folder simultaneously without database locks.
-- 🔄 **Feature Pivot Support**: Did business requirements change? Run `wake objective "New Goal"` to safely pivot the AI's memory without a full reset.
+- **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers without uploading your repo to a cloud VM.
+- **Git Drift Reconciliation**: Actively compares the AI's memory against Git. Automatically flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` states.
+- **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
+- **Multi-Agent Safe**: Built with SQLite WAL mode. Run 5 different AI agents in the same folder simultaneously without database locks.
+- **Feature Pivot Support**: Did business requirements change? Run `wake objective "New Goal"` to safely pivot the AI's memory without a full reset.
 
 ## Quickstart
 
