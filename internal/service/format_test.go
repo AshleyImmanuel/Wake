@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"wake/internal/reconcile"
 	"wake/internal/state"
-	"github.com/google/uuid"
 )
 
 func TestFormatResumePacket_Truncation(t *testing.T) {

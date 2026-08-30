@@ -1,9 +1,9 @@
 package reconcile
 
 import (
+	"strings"
 	"wake/internal/git"
 	"wake/internal/state"
-	"strings"
 )
 
 // matchesConstraint determines if a changed file violates a given constraint string.

@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"wake/internal/events"
 	"github.com/google/uuid"
+	"wake/internal/events"
 )
 
 func generateEventChecksum(id, taskID, sessionID, eventType, timestamp, payload, author string) string {

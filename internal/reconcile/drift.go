@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 )
 
 // determineDriftStatus calculates if the changed files were modified by AI, Human, or both.
@@ -24,7 +23,7 @@ func determineDriftStatus(repoRoot string, changedFiles []string, checkpointTime
 
 	logPath := filepath.Join(repoRoot, ".wake", "attribution.log")
 	file, err := os.Open(logPath)
-	
+
 	// If there's no log file, we assume all changes were made by the human
 	if err != nil {
 		return StatusHumanAhead, "Workspace is HUMAN_AHEAD. Repository has uncommitted changed file(s)"
@@ -101,7 +100,7 @@ func determineDriftStatus(repoRoot string, changedFiles []string, checkpointTime
 					}
 				}
 			}
-			
+
 			if stopParsing {
 				break
 			}
@@ -113,7 +112,7 @@ func determineDriftStatus(repoRoot string, changedFiles []string, checkpointTime
 
 	for _, file := range changedFiles {
 		aiModTime, hasAIMod := aiMods[file]
-		
+
 		// If the AI modified this file AFTER or exactly AT the checkpoint time, we attribute the change to the AI
 		if hasAIMod && !aiModTime.Before(cpTime) {
 			aiModifiedCount++

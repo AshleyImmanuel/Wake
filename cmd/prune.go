@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/cobra"
 	"wake/internal/db"
 	"wake/internal/git"
-	"github.com/spf13/cobra"
 )
 
 var (

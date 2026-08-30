@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/cobra"
 	"wake/internal/db"
 	"wake/internal/events"
 	"wake/internal/git"
 	"wake/internal/service"
-	"github.com/fsnotify/fsnotify"
-	"github.com/spf13/cobra"
 )
 
 var watchDir string

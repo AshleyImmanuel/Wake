@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	repoAPIURL    = "https://api.github.com/repos/AshleyImmanuel/Wake/releases/latest"
+	repoAPIURL    = "https://api.github.com/repos/Wake-Engine/Wake/releases/latest"
 	updateFile    = ".wake_update.json"
 	checkInterval = 24 * time.Hour
 )

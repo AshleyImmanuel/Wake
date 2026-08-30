@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-red.svg" alt="License: Proprietary"></a>
-  <a href="https://github.com/AshleyImmanuel/Wake/releases"><img src="https://img.shields.io/badge/Version-v1.2.0-blue.svg" alt="Version"></a>
+  <a href="https://github.com/Wake-Engine/Wake/releases"><img src="https://img.shields.io/badge/Version-v1.2.0-blue.svg" alt="Version"></a>
   <a href="https://www.npmjs.com/package/wake-engine"><img src="https://img.shields.io/npm/v/wake-engine?label=npm&amp;color=CB3837" alt="npm"></a>
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
 </p>
@@ -18,7 +18,7 @@
 
 > **[V1.1 RELEASE]:** Introduces Universal Continuous Recovery Stashing, Git-less Fallback hashing, and Write-Write Conflict Detection.
 
-If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
+If you find bugs or want to contribute, please reach out: **maintainers@wake-engine.com**
 
 <br/>
 
@@ -28,7 +28,7 @@ If you find bugs or want to contribute, please reach out: **immanuelashley77@gma
 
 **Copy & Paste this to your AI:**
 ```text
-We are using Wake to manage your state and prevent context drift. Please read the documentation at https://github.com/AshleyImmanuel/Wake, locate the "System Instructions for Autonomous AI Agents" section, and strictly follow the integration directives for this session.
+We are using Wake to manage your state and prevent context drift. Please read the documentation at https://github.com/Wake-Engine/Wake, locate the "System Instructions for Autonomous AI Agents" section, and strictly follow the integration directives for this session.
 ```
 
 ---
@@ -93,15 +93,15 @@ This auto-detects your OS (Windows, macOS, or Linux), downloads the correct pre-
 
 **Install via Direct Binary Download**
 
-Download the latest release for your platform from the [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases):
+Download the latest release for your platform from the [GitHub Releases Page](https://github.com/Wake-Engine/Wake/releases):
 
 | Platform | Architecture | Download |
 |----------|-------------|----------|
-| Windows | x86_64 | [Wake_Windows_x86_64.zip](https://github.com/AshleyImmanuel/Wake/releases/latest) |
-| macOS | x86_64 (Intel) | [Wake_Darwin_x86_64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
-| macOS | arm64 (Apple Silicon) | [Wake_Darwin_arm64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
-| Linux | x86_64 | [Wake_Linux_x86_64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
-| Linux | arm64 | [Wake_Linux_arm64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
+| Windows | x86_64 | [Wake_Windows_x86_64.zip](https://github.com/Wake-Engine/Wake/releases/latest) |
+| macOS | x86_64 (Intel) | [Wake_Darwin_x86_64.tar.gz](https://github.com/Wake-Engine/Wake/releases/latest) |
+| macOS | arm64 (Apple Silicon) | [Wake_Darwin_arm64.tar.gz](https://github.com/Wake-Engine/Wake/releases/latest) |
+| Linux | x86_64 | [Wake_Linux_x86_64.tar.gz](https://github.com/Wake-Engine/Wake/releases/latest) |
+| Linux | arm64 | [Wake_Linux_arm64.tar.gz](https://github.com/Wake-Engine/Wake/releases/latest) |
 
 ### Installation & Setup
 
@@ -127,7 +127,7 @@ Download the latest release for your platform from the [GitHub Releases Page](ht
 Ensure you have Go 1.24+ installed:
 
 ```bash
-git clone https://github.com/AshleyImmanuel/Wake.git
+git clone https://github.com/Wake-Engine/Wake.git
 cd Wake
 go build -o wake .
 ```
@@ -316,7 +316,7 @@ Wake is built entirely in Go for cross-platform binary distribution.
 
 ## Copyright & License
 
-**Copyright (c) 2026 Ashley Immanuel. All Rights Reserved.**
+**Copyright (c) 2026 The Wake Authors. All Rights Reserved.**
 
 This software is proprietary. You may not use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software without express written permission. See the [LICENSE](LICENSE) file for more information.
  

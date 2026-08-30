@@ -9,13 +9,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"wake/internal/db"
 	"wake/internal/events"
 	"wake/internal/git"
 	"wake/internal/guard"
 	"wake/internal/reconcile"
 	"wake/internal/state"
-	"github.com/google/uuid"
 )
 
 type TaskService interface {

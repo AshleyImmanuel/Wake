@@ -26,11 +26,11 @@ This auto-detects your OS (Windows, macOS, or Linux), downloads the correct pre-
 
 **Install via Direct Binary Download**
 
-Download the latest release for your platform from the [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases).
+Download the latest release for your platform from the [GitHub Releases Page](https://github.com/Wake-Engine/Wake/releases).
 
 **Build from Source**
 ```bash
-git clone https://github.com/AshleyImmanuel/Wake.git
+git clone https://github.com/Wake-Engine/Wake.git
 cd Wake
 go build -o wake .
 ```

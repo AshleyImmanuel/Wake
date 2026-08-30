@@ -27,7 +27,7 @@ else {
 
 const ext = osName === 'Windows' ? 'zip' : 'tar.gz';
 const filename = `Wake_${osName}_${arch}.${ext}`;
-const url = `https://github.com/AshleyImmanuel/Wake/releases/download/v${version}/${filename}`;
+const url = `https://github.com/Wake-Engine/Wake/releases/download/v${version}/${filename}`;
 
 console.log(`Downloading Wake v${version} for ${osName} ${arch}...`);
 console.log(`Fetching from: ${url}`);

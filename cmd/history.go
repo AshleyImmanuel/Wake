@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
 	"wake/internal/db"
 	"wake/internal/git"
 	"wake/internal/service"
-	"github.com/spf13/cobra"
 )
 
 var (

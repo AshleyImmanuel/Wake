@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/spf13/cobra"
 	"wake/internal/db"
 	"wake/internal/events"
 	"wake/internal/git"
-	"github.com/spf13/cobra"
 )
 
 var completeCmd = &cobra.Command{

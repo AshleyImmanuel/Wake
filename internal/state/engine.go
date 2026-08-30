@@ -1,8 +1,8 @@
 package state
 
 import (
-	"wake/internal/events"
 	"github.com/google/uuid"
+	"wake/internal/events"
 )
 
 // Reduce takes a slice of ordered events and reduces them into a current State snapshot.

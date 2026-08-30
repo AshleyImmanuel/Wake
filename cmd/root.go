@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"wake/internal/updater"
 	"github.com/spf13/cobra"
+	"wake/internal/updater"
 )
 
 // Version represents the current release version of Wake.

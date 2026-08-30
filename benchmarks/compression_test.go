@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"wake/internal/events"
 	"wake/internal/state"
-	"github.com/google/uuid"
 )
 
 // roughTokenEstimate provides a very crude 1 token ≈ 4 chars estimate for benchmarking.

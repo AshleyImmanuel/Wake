@@ -10,8 +10,8 @@ import (
 	"os"
 	"time"
 
-	"wake/internal/state"
 	"github.com/google/uuid"
+	"wake/internal/state"
 )
 
 func generateCheckpointChecksum(id, taskID, sessionID, timestamp, commit, stateData, repository, branch, author string) string {
