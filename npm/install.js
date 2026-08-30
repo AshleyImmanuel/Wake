@@ -59,13 +59,32 @@ async function install() {
         await download(url, dest);
         console.log("Download complete. Extracting...");
         
+        const installDir = __dirname;
+        const binName = osName === 'Windows' ? 'wake.exe' : 'wake';
+        
         if (osName === 'Windows') {
-            // Windows 10+ natively has tar which extracts zips!
-            execSync(`tar -xf ${filename}`, { stdio: 'inherit' });
+            execSync(`tar -xf "${dest}"`, { cwd: installDir, stdio: 'inherit' });
         } else {
-            execSync(`tar -xzf ${filename}`, { stdio: 'inherit' });
-            // Make executable if on mac/linux
-            execSync('chmod +x wake', { stdio: 'inherit' });
+            execSync(`tar -xzf "${dest}"`, { cwd: installDir, stdio: 'inherit' });
+        }
+        
+        // GoReleaser may place the binary at the root of the archive.
+        // Ensure it's in installDir.
+        const binPath = path.join(installDir, binName);
+        if (!fs.existsSync(binPath)) {
+            // Search one level deep for the binary
+            const entries = fs.readdirSync(installDir);
+            for (const entry of entries) {
+                const candidate = path.join(installDir, entry, binName);
+                if (fs.existsSync(candidate)) {
+                    fs.renameSync(candidate, binPath);
+                    break;
+                }
+            }
+        }
+        
+        if (!osName.startsWith('Windows')) {
+            execSync(`chmod +x "${binPath}"`, { stdio: 'inherit' });
         }
         
         // Clean up archive

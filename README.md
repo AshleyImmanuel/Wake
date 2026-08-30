@@ -7,7 +7,9 @@
   <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
   
   [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/Version-v1.0--beta-orange.svg)]()
+  [![Version](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](https://github.com/AshleyImmanuel/Wake/releases)
+  [![npm](https://img.shields.io/npm/v/wake-engine?label=npm&color=CB3837)](https://www.npmjs.com/package/wake-engine)
+  [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 </div>
 
 > **Tags:** `wake`, `mcp-server`, `ai-agents`, `state-machine`, `local-first`
@@ -66,16 +68,31 @@ It anchors the agent's memory to the local codebase using a highly performant, e
 ## Quickstart
 
 ### Installation
-Wake is blazing fast and completely cross-platform. We distribute our native binaries using a lightweight NPM wrapper so you can install it instantly.
 
-**Option 1: Node Package Manager (Recommended)**
+Wake ships as a single, blazing-fast native binary. No runtime dependencies required.
+
+**Install via NPM (Recommended -- All Platforms)**
 ```bash
 npm install -g wake-engine
 ```
-*Note: This simply downloads the highly-optimized Go binary to your machine. It does not run Node during execution.*
+This auto-detects your OS (Windows, macOS, or Linux), downloads the correct pre-compiled binary, and places it in your system path. Node.js is only needed for installation -- Wake itself runs as a native Go binary with zero overhead.
 
-**Option 2: Direct Binary Download**
-You can download pre-compiled, zero-dependency binaries for Windows (`.exe`), macOS, and Linux directly from our [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases).
+**Install via Direct Binary Download**
+
+Download the latest release for your platform from the [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases):
+
+| Platform | Architecture | Download |
+|----------|-------------|----------|
+| Windows | x86_64 | [Wake_Windows_x86_64.zip](https://github.com/AshleyImmanuel/Wake/releases/latest) |
+| macOS | x86_64 (Intel) | [Wake_Darwin_x86_64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
+| macOS | arm64 (Apple Silicon) | [Wake_Darwin_arm64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
+| Linux | x86_64 | [Wake_Linux_x86_64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
+| Linux | arm64 | [Wake_Linux_arm64.tar.gz](https://github.com/AshleyImmanuel/Wake/releases/latest) |
+
+**Verify Installation**
+```bash
+wake --help
+```
 
 ### Build from Source
 Ensure you have Go 1.24+ installed:
