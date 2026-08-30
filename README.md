@@ -11,7 +11,7 @@
   [![Version](https://img.shields.io/badge/Version-v1.0--beta-green.svg)]()
 </div>
 
-> **⚠️ BETA RELEASE NOTICE:** Wake is currently in v1.0 Beta. The human-interference reconciliation engine is highly experimental. We deeply appreciate the developers and early adopters who are pressure-testing this in real-world scenarios! If you find bugs, have feedback, or want to contribute, please email the creator directly at: **immanuelashley77@gmail.com**
+> **[BETA RELEASE NOTICE]:** Wake is currently in v1.0 Beta. The human-interference reconciliation engine is highly experimental. We deeply appreciate the developers and early adopters who are pressure-testing this in real-world scenarios! If you find bugs, have feedback, or want to contribute, please email the creator directly at: **immanuelashley77@gmail.com**
 
 <br/>
 
