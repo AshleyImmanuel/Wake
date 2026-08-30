@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "wake": {
+      "args": [
+        "mcp"
+      ],
+      "command": "C:\\Users\\USER\\Desktop\\Wake\\wake.exe",
+      "type": "stdio"
+    }
+  }
+}

@@ -7,7 +7,7 @@
   <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
   
   [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/Version-v1.1.0-blue.svg)](https://github.com/AshleyImmanuel/Wake/releases)
+  [![Version](https://img.shields.io/badge/Version-v1.2.0-blue.svg)](https://github.com/AshleyImmanuel/Wake/releases)
   [![npm](https://img.shields.io/npm/v/wake-engine?label=npm&color=CB3837)](https://www.npmjs.com/package/wake-engine)
   [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 </div>

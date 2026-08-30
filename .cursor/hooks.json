@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "postToolUse": [
+      {
+        "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" mark --author AI"
+      },
+      {
+        "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" checkpoint --objective 'Cursor Auto-Save'"
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" check-conflict"
+      }
+    ]
+  },
+  "version": 1
+}
