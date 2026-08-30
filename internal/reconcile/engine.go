@@ -165,8 +165,29 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 		}
 	}
 
+	// Build a map of renamed files to avoid false-positive conflicts
+	renameMap := make(map[string]string)
+	for _, f := range repo.StagedFiles {
+		if f.StagingStatus == git.StatusRenamed && f.OrigPath != "" {
+			renameMap[normalizePath(f.OrigPath)] = normalizePath(f.Path)
+			renameMap[normalizePath(f.Path)] = normalizePath(f.OrigPath)
+		}
+	}
+	for _, f := range repo.UnstagedFiles {
+		if f.WorkTreeStatus == git.StatusRenamed && f.OrigPath != "" {
+			renameMap[normalizePath(f.OrigPath)] = normalizePath(f.Path)
+			renameMap[normalizePath(f.Path)] = normalizePath(f.OrigPath)
+		}
+	}
+
 	// 4. CONFLICT CHECK: Invalidation of Completed / DoNotRepeat claims
 	for _, file := range result.ChangedFiles {
+		if _, isRename := renameMap[file]; isRename {
+			// Skip conflict generation for renamed files. 
+			// We treat them as safely moved rather than tampered/deleted.
+			continue
+		}
+
 		for _, completed := range cp.StateData.Completed {
 			if matchesCompletedOrDoNotRepeat(file, completed) {
 				invalidation := fmt.Sprintf("Completed milestone artifact '%s' was modified or altered: %s", completed, file)
@@ -184,6 +205,12 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 	// Invalidation from deleted status in worktree or index
 	deletedFiles := getDeletedFiles(repo)
 	for _, delFile := range deletedFiles {
+		if _, isRename := renameMap[delFile]; isRename {
+			// Skip conflict generation for renamed files. 
+			// We treat them as safely moved rather than tampered/deleted.
+			continue
+		}
+
 		for _, completed := range cp.StateData.Completed {
 			if matchesCompletedOrDoNotRepeat(delFile, completed) {
 				invalidation := fmt.Sprintf("Completed milestone artifact '%s' was deleted: %s", completed, delFile)
