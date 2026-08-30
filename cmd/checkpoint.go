@@ -28,10 +28,6 @@ var checkpointCmd = &cobra.Command{
 	},
 }
 
-func runCheckpoint(ctx context.Context, targetDir, taskIDStr, objective string) error {
-	return runCheckpointWithOpts(ctx, targetDir, taskIDStr, objective, false, nil)
-}
-
 func runCheckpointWithOpts(ctx context.Context, targetDir, taskIDStr, objective string, force bool, trackedFiles []string) error {
 	if targetDir == "" {
 		var err error

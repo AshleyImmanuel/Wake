@@ -36,6 +36,7 @@ func findGitBinary() string {
 		`C:\Program Files (x86)\Git\cmd\git.exe`,
 		`C:\Program Files (x86)\Git\bin\git.exe`,
 	} {
+		// #nosec G204
 		cmd := exec.Command(candidate, "--version")
 		if err := cmd.Run(); err == nil {
 			return candidate
@@ -53,6 +54,7 @@ func (r *OSRunner) Run(ctx context.Context, dir string, args ...string) ([]byte,
 		}
 	}
 
+	// #nosec G204
 	cmd := exec.CommandContext(ctx, r.gitPath, args...)
 	if dir != "" {
 		cmd.Dir = dir
