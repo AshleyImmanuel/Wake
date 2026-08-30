@@ -16,7 +16,14 @@ import (
 
 func generateCheckpointChecksum(id, taskID, sessionID, timestamp, commit, stateData, repository, branch, author string) string {
 	h := sha256.New()
-	h.Write([]byte(id + taskID + sessionID + timestamp + commit + stateData + repository + branch + author))
+	// Use null bytes as delimiters to prevent hash canonicalization collisions
+	fields := []string{id, taskID, sessionID, timestamp, commit, stateData, repository, branch, author}
+	for i, f := range fields {
+		h.Write([]byte(f))
+		if i < len(fields)-1 {
+			h.Write([]byte{0})
+		}
+	}
 	return hex.EncodeToString(h.Sum(nil))
 }
 
