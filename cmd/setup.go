@@ -78,10 +78,25 @@ var setupCmd = &cobra.Command{
 
 			hooksConfig := map[string]interface{}{
 				"wake-autosave": map[string]interface{}{
+					"PreToolUse": []interface{}{
+						map[string]interface{}{
+							"matcher": "write_to_file|replace_file_content|multi_replace_file_content",
+							"hooks": []interface{}{
+								map[string]interface{}{
+									"type":    "command",
+									"command": fmt.Sprintf("\"%s\" check-conflict", exe),
+								},
+							},
+						},
+					},
 					"PostToolUse": []interface{}{
 						map[string]interface{}{
 							"matcher": "write_to_file|replace_file_content|multi_replace_file_content",
 							"hooks": []interface{}{
+								map[string]interface{}{
+									"type":    "command",
+									"command": fmt.Sprintf("\"%s\" mark --author AI", exe),
+								},
 								map[string]interface{}{
 									"type":    "command",
 									"command": fmt.Sprintf("\"%s\" checkpoint --objective 'Antigravity Auto-Save'", exe),
