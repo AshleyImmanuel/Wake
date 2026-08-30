@@ -1,0 +1,38 @@
+{
+  "wake-autosave": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" mark --author AI",
+            "type": "command"
+          },
+          {
+            "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" checkpoint --objective 'Antigravity Auto-Save'",
+            "type": "command"
+          }
+        ],
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" check-conflict",
+            "type": "command"
+          }
+        ],
+        "matcher": "write_to_file|replace_file_content|multi_replace_file_content"
+      }
+    ]
+  },
+  "wake-resume": {
+    "PreInvocation": [
+      {
+        "command": "\"C:\\Users\\USER\\Desktop\\Wake\\wake.exe\" resume \u003e .agents/last_resume.txt",
+        "type": "command"
+      }
+    ]
+  }
+}

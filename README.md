@@ -196,3 +196,5 @@ Wake is built entirely in Go for cross-platform binary distribution.
 **Copyright (c) 2026 Ashley Immanuel. All Rights Reserved.**
 
 This software is proprietary. You may not use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software without express written permission. See the [LICENSE](LICENSE) file for more information.
+   
+ 
