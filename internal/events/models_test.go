@@ -18,7 +18,7 @@ func TestNewEvent(t *testing.T) {
 	}
 
 	before := time.Now().UTC()
-	event := NewEvent(taskID, TaskStarted, payload)
+	event := NewEvent(taskID, TaskStarted, "Test Author", payload)
 	after := time.Now().UTC()
 
 	if event.ID == uuid.Nil {

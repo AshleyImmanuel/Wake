@@ -90,9 +90,10 @@ func migrate(db *sql.DB) error {
 		}
 	}
 
-	// Safely add repository and branch columns if table existed without them
 	_ = addColumnIfNotExists(tx, "checkpoints", "repository", "TEXT DEFAULT ''")
 	_ = addColumnIfNotExists(tx, "checkpoints", "branch", "TEXT DEFAULT ''")
+	_ = addColumnIfNotExists(tx, "checkpoints", "author", "TEXT DEFAULT ''")
+	_ = addColumnIfNotExists(tx, "events", "author", "TEXT DEFAULT ''")
 	_ = addColumnIfNotExists(tx, "events", "checksum", "TEXT DEFAULT ''")
 	_ = addColumnIfNotExists(tx, "checkpoints", "checksum", "TEXT DEFAULT ''")
 
@@ -115,15 +116,15 @@ func addColumnIfNotExists(tx *sql.Tx, table, column, colDef string) error {
 	return nil
 }
 
-func generateEventChecksum(id, taskID, eventType, timestamp, payload string) string {
+func generateEventChecksum(id, taskID, eventType, timestamp, payload, author string) string {
 	h := sha256.New()
-	h.Write([]byte(id + taskID + eventType + timestamp + payload))
+	h.Write([]byte(id + taskID + eventType + timestamp + payload + author))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func generateCheckpointChecksum(id, taskID, timestamp, commit, stateData, repository, branch string) string {
+func generateCheckpointChecksum(id, taskID, timestamp, commit, stateData, repository, branch, author string) string {
 	h := sha256.New()
-	h.Write([]byte(id + taskID + timestamp + commit + stateData + repository + branch))
+	h.Write([]byte(id + taskID + timestamp + commit + stateData + repository + branch + author))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -149,10 +150,10 @@ func SaveCheckpoint(ctx context.Context, db *sql.DB, cp state.Checkpoint) error 
 	}
 
 	stateDataStr := string(stateBytes)
-	checksum := generateCheckpointChecksum(cp.ID.String(), cp.TaskID.String(), cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch)
+	checksum := generateCheckpointChecksum(cp.ID.String(), cp.TaskID.String(), cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch, cp.Author)
 
-	query := `INSERT INTO checkpoints (id, task_id, timestamp, commit_hash, state_version, event_position, state_data, repository, branch, checksum)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO checkpoints (id, task_id, timestamp, commit_hash, state_version, event_position, state_data, repository, branch, author, checksum)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err = db.ExecContext(ctx, query,
 		cp.ID.String(),
@@ -164,6 +165,7 @@ func SaveCheckpoint(ctx context.Context, db *sql.DB, cp state.Checkpoint) error 
 		stateDataStr,
 		cp.Repository,
 		cp.Branch,
+		cp.Author,
 		checksum,
 	)
 	if err != nil {
@@ -184,14 +186,14 @@ func GetLatestCheckpoint(ctx context.Context, db *sql.DB, taskID string) (*state
 	var err error
 
 	if taskID != "" && taskID != "all" {
-		query = `SELECT id, task_id, timestamp, commit_hash, state_version, event_position, state_data, COALESCE(repository, ''), COALESCE(branch, ''), COALESCE(checksum, '')
+		query = `SELECT id, task_id, timestamp, commit_hash, state_version, event_position, state_data, COALESCE(repository, ''), COALESCE(branch, ''), COALESCE(author, ''), COALESCE(checksum, '')
 			FROM checkpoints
 			WHERE task_id = ?
 			ORDER BY timestamp DESC, state_version DESC, rowid DESC
 			LIMIT 1`
 		rows, err = db.QueryContext(ctx, query, taskID)
 	} else {
-		query = `SELECT id, task_id, timestamp, commit_hash, state_version, event_position, state_data, COALESCE(repository, ''), COALESCE(branch, ''), COALESCE(checksum, '')
+		query = `SELECT id, task_id, timestamp, commit_hash, state_version, event_position, state_data, COALESCE(repository, ''), COALESCE(branch, ''), COALESCE(author, ''), COALESCE(checksum, '')
 			FROM checkpoints
 			ORDER BY timestamp DESC, state_version DESC, rowid DESC
 			LIMIT 1`
@@ -223,6 +225,7 @@ func GetLatestCheckpoint(ctx context.Context, db *sql.DB, taskID string) (*state
 		&stateDataStr,
 		&cp.Repository,
 		&cp.Branch,
+		&cp.Author,
 		&checksumStr,
 	); err != nil {
 		return nil, fmt.Errorf("failed to scan checkpoint row: %w", err)
@@ -232,7 +235,7 @@ func GetLatestCheckpoint(ctx context.Context, db *sql.DB, taskID string) (*state
 		// Legacy record without checksum - compute and accept but note integrity is unverified
 		fmt.Fprintf(os.Stderr, "warning: legacy checkpoint %s found without checksum\n", idStr)
 	} else {
-		expected := generateCheckpointChecksum(idStr, taskIDStr, cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch)
+		expected := generateCheckpointChecksum(idStr, taskIDStr, cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch, cp.Author)
 		if checksumStr != expected {
 			return nil, fmt.Errorf("state poisoning detected: checkpoint %s checksum mismatch", idStr)
 		}
@@ -281,15 +284,16 @@ func SaveEvent(ctx context.Context, db *sql.DB, e events.Event) error {
 
 	payloadStr := string(payloadBytes)
 	timestampStr := e.Timestamp.Format(time.RFC3339)
-	checksum := generateEventChecksum(e.ID.String(), e.TaskID.String(), string(e.Type), timestampStr, payloadStr)
+	checksum := generateEventChecksum(e.ID.String(), e.TaskID.String(), string(e.Type), timestampStr, payloadStr, e.Author)
 
-	query := `INSERT INTO events (id, task_id, type, timestamp, payload, checksum) VALUES (?, ?, ?, ?, ?, ?)`
+	query := `INSERT INTO events (id, task_id, type, timestamp, payload, author, checksum) VALUES (?, ?, ?, ?, ?, ?, ?)`
 	_, err = db.ExecContext(ctx, query,
 		e.ID.String(),
 		e.TaskID.String(),
 		string(e.Type),
 		timestampStr,
 		payloadStr,
+		e.Author,
 		checksum,
 	)
 	if err != nil {
@@ -305,7 +309,7 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 		return nil, fmt.Errorf("db connection is nil")
 	}
 
-	query := `SELECT id, task_id, type, timestamp, payload, COALESCE(checksum, '') FROM events WHERE task_id = ? ORDER BY timestamp ASC, rowid ASC`
+	query := `SELECT id, task_id, type, timestamp, payload, COALESCE(author, ''), COALESCE(checksum, '') FROM events WHERE task_id = ? ORDER BY timestamp ASC, rowid ASC`
 	rows, err := db.QueryContext(ctx, query, taskID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query events: %w", err)
@@ -317,7 +321,7 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 		var e events.Event
 		var idStr, taskIDStr, typeStr, timeStr, payloadStr, checksumStr string
 
-		if err := rows.Scan(&idStr, &taskIDStr, &typeStr, &timeStr, &payloadStr, &checksumStr); err != nil {
+		if err := rows.Scan(&idStr, &taskIDStr, &typeStr, &timeStr, &payloadStr, &e.Author, &checksumStr); err != nil {
 			return nil, fmt.Errorf("failed to scan event row: %w", err)
 		}
 
@@ -325,7 +329,7 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 			// Legacy record without checksum - integrity unverified
 			fmt.Fprintf(os.Stderr, "warning: legacy event %s found without checksum\n", idStr)
 		} else {
-			expected := generateEventChecksum(idStr, taskIDStr, typeStr, timeStr, payloadStr)
+			expected := generateEventChecksum(idStr, taskIDStr, typeStr, timeStr, payloadStr, e.Author)
 			if checksumStr != expected {
 				return nil, fmt.Errorf("state poisoning detected: event %s checksum mismatch", idStr)
 			}

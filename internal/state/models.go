@@ -95,6 +95,7 @@ type Checkpoint struct {
 	Repository    string
 	Branch        string
 	Commit        string
+	Author        string
 	StateVersion  int
 	EventPosition int
 	StateData     State // The snapshot of the state at this point

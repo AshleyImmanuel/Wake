@@ -92,6 +92,13 @@ func (s *Server) handleRequest(ctx context.Context, out *json.Encoder, req JSONR
 
 	switch req.Method {
 	case "initialize":
+		var params InitializeParams
+		if err := json.Unmarshal(req.Params, &params); err == nil {
+			if params.ClientInfo.Name != "" {
+				s.svc.SetAuthor(params.ClientInfo.Name)
+			}
+		}
+
 		res := InitializeResult{
 			ProtocolVersion: "2024-11-05",
 			Capabilities: ServerCapabilities{
