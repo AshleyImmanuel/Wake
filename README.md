@@ -140,7 +140,7 @@ Wake is built to **complement**, not replace, existing AI coding tools:
 
 Wake is built for high-risk, commercial, and enterprise-grade environments with **Privacy by Design**:
 - **0-Vulnerability Codebase**: Fully audited with `gosec` yielding zero vulnerabilities. Safe against path traversal, integer overflows, and command injections.
-- **DPDP Act Compliant**: Wake is 100% local. It collects **zero telemetry**, makes **no external HTTP calls**, and strictly minimizes data collection to local UUIDs/Agent Names for tracking modifications. 
+- **DPDP Act Compliant**: Wake is 100% local. It collects **zero telemetry**, makes **no external API calls** (with the sole exception of a 24-hour version check ping to the public GitHub Release API), and strictly minimizes data collection to local UUIDs/Agent Names for tracking modifications. 
 - **Absolute Local Sovereignty**: All state is persisted in a local SQLite ledger (`.wake/`). You maintain absolute control and erasure rights over your data.
 - **Strict File Guards**: Enforces strict `0600`/`0750` permissions to prevent unauthorized tampering of internal ledger and config files.
 
