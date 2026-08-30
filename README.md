@@ -136,18 +136,72 @@ wake history
 
 ### Integrate via MCP (Model Context Protocol)
 
-Wake seamlessly integrates with MCP-compatible clients (e.g., Claude Desktop, Cursor, Antigravity) natively. 
+Wake implements the MCP JSON-RPC 2.0 specification over `stdio`. It exposes 7 core tools, 4 state resources, and 3 workflow prompts. Wake integrates natively with **every major AI coding tool**.
 
-Wake implements the 2024-11-05 MCP JSON-RPC 2.0 specification over `stdio`. It exposes 7 core tools (e.g., `wake_checkpoint`, `wake_status`, `wake_resume`), 4 state resources, and 3 workflow prompts.
+**Auto-Setup (Recommended)**
 
-Add the following to your MCP configuration to execute Wake dynamically:
+Generate configurations for all supported IDEs at once:
+```bash
+wake setup
+```
+Or target a specific IDE:
+```bash
+wake setup --cursor      # Cursor
+wake setup --vscode      # VS Code (GitHub Copilot)
+wake setup --windsurf    # Windsurf (Codeium)
+wake setup --kiro        # Kiro (AWS)
+wake setup --claude      # Claude Desktop & Claude Code
+wake setup --zed         # Zed Editor
+wake setup --antigravity # Antigravity (includes hooks for auto-save, conflict detection, and attribution)
+```
 
+**Manual Configuration**
+
+If you prefer to configure manually, add Wake to your IDE's MCP config:
+
+| IDE | Config File | Config Key |
+|-----|-------------|------------|
+| **Cursor** | `.cursor/mcp.json` | `mcpServers` |
+| **VS Code (Copilot)** | `.vscode/mcp.json` | `servers` (with `"type": "stdio"`) |
+| **Windsurf** | `~/.codeium/windsurf/mcp_config.json` | `mcpServers` |
+| **Kiro** | `.kiro/settings/mcp.json` | `mcpServers` |
+| **Claude Desktop** | `~/Library/Application Support/Claude/claude_desktop_config.json` | `mcpServers` |
+| **Claude Code** | `.claude/mcp.json` or via `claude mcp add` | `mcpServers` |
+| **Zed** | `settings.json` | `context_servers` |
+| **Antigravity** | `.agents/mcp_config.json` | `mcpServers` |
+
+Example (Cursor, Windsurf, Kiro, Claude, Antigravity):
 ```json
 {
   "mcpServers": {
     "wake": {
-      "command": "go",
-      "args": ["run", "github.com/AshleyImmanuel/Wake@latest", "mcp"]
+      "command": "wake",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Example (VS Code / GitHub Copilot):
+```json
+{
+  "servers": {
+    "wake": {
+      "type": "stdio",
+      "command": "wake",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+Example (Zed):
+```json
+{
+  "context_servers": {
+    "wake": {
+      "command": "wake",
+      "args": ["mcp"]
     }
   }
 }
@@ -164,7 +218,7 @@ Add the following to your MCP configuration to execute Wake dynamically:
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
 | `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration (auto-starts background watcher and continuous stashing) |
-| `wake setup <ide>` | Generate IDE configuration (Cursor, VS Code, Claude Code). Use `--antigravity` to auto-generate `hooks.json` for native Antigravity IDE interception. |
+| `wake setup` | Auto-generate MCP configs for any IDE: `--cursor`, `--vscode`, `--windsurf`, `--kiro`, `--claude`, `--zed`, `--antigravity`. Run without flags to generate all. |
 | `wake check-conflict` | Optimistic concurrency check to block rogue AI overwrites. |
 | `wake mark` | Mark a file with Author Attribution (AI or HUMAN). |
 
