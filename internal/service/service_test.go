@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/events"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/reconcile"
+	"github.com/google/uuid"
 )
 
 type mockGitClient struct {
@@ -91,10 +91,10 @@ func (m *mockGitClient) GetCurrentCommit(ctx context.Context, repoPath string) (
 func setupTestService(t *testing.T, client git.Client) (TaskService, string) {
 	t.Helper()
 	dir := t.TempDir()
-	
+
 	// Create .wake dir manually or InitDB fails if it doesn't try to create it
 	// Actually InitDB creates it
-	
+
 	database, err := db.InitDB(dir)
 	if err != nil {
 		t.Fatalf("failed to init db: %v", err)
@@ -102,7 +102,7 @@ func setupTestService(t *testing.T, client git.Client) (TaskService, string) {
 	t.Cleanup(func() {
 		database.Close()
 	})
-	
+
 	if client == nil {
 		client = &mockGitClient{repoRoot: dir}
 	}
@@ -112,18 +112,18 @@ func setupTestService(t *testing.T, client git.Client) (TaskService, string) {
 
 func TestInitWorkspace(t *testing.T) {
 	svc, dir := setupTestService(t, nil)
-	
+
 	ctx := context.Background()
 	err := svc.InitWorkspace(ctx, dir)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	wakeDir := filepath.Join(dir, ".wake")
 	if _, err := os.Stat(wakeDir); os.IsNotExist(err) {
 		t.Errorf("expected .wake directory to be created")
 	}
-	
+
 	gitIgnore := filepath.Join(wakeDir, ".gitignore")
 	if _, err := os.Stat(gitIgnore); os.IsNotExist(err) {
 		t.Errorf("expected .gitignore to be created in .wake")
@@ -133,12 +133,12 @@ func TestInitWorkspace(t *testing.T) {
 func TestCreateCheckpoint_HappyPath(t *testing.T) {
 	svc, dir := setupTestService(t, nil)
 	ctx := context.Background()
-	
+
 	req := CheckpointRequest{
-		Dir: dir,
+		Dir:       dir,
 		Objective: "Test Objective",
 	}
-	
+
 	cp, err := svc.CreateCheckpoint(ctx, req)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -146,7 +146,7 @@ func TestCreateCheckpoint_HappyPath(t *testing.T) {
 	if cp == nil {
 		t.Fatalf("expected checkpoint to be returned")
 	}
-	
+
 	if cp.StateData.Objective != "Test Objective" {
 		t.Errorf("expected objective 'Test Objective', got '%s'", cp.StateData.Objective)
 	}
@@ -158,24 +158,24 @@ func TestCreateCheckpoint_HappyPath(t *testing.T) {
 func TestCreateCheckpoint_Force(t *testing.T) {
 	client := &mockGitClient{
 		state: &git.RepositoryState{
-			IsClean: false,
+			IsClean:       false,
 			ModifiedFiles: []string{"file1.go"},
-			CommitHash: "abcd123",
-			Branch: "main",
+			CommitHash:    "abcd123",
+			Branch:        "main",
 		},
 	}
 	svc, dir := setupTestService(t, client)
 	ctx := context.Background()
-	
+
 	req := CheckpointRequest{
 		Dir: dir,
 	}
-	
+
 	_, err := svc.CreateCheckpoint(ctx, req)
 	if err == nil {
 		t.Fatalf("expected error due to dirty state without force")
 	}
-	
+
 	req.Force = true
 	cp, err := svc.CreateCheckpoint(ctx, req)
 	if err != nil {
@@ -189,13 +189,13 @@ func TestCreateCheckpoint_Force(t *testing.T) {
 func TestCreateCheckpoint_ExplicitTaskID(t *testing.T) {
 	svc, dir := setupTestService(t, nil)
 	ctx := context.Background()
-	
+
 	taskID := uuid.New().String()
 	req := CheckpointRequest{
-		Dir: dir,
+		Dir:    dir,
 		TaskID: taskID,
 	}
-	
+
 	cp, err := svc.CreateCheckpoint(ctx, req)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -208,7 +208,7 @@ func TestCreateCheckpoint_ExplicitTaskID(t *testing.T) {
 func TestGetStatus_HappyPath(t *testing.T) {
 	svc, dir := setupTestService(t, nil)
 	ctx := context.Background()
-	
+
 	req := CheckpointRequest{
 		Dir: dir,
 	}
@@ -216,16 +216,16 @@ func TestGetStatus_HappyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error creating checkpoint, got %v", err)
 	}
-	
+
 	statusReq := StatusRequest{
 		TaskID: cp.TaskID.String(),
-		Dir: dir,
+		Dir:    dir,
 	}
 	result, err := svc.GetStatus(ctx, statusReq)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	if result.Status != reconcile.StatusSafe {
 		t.Errorf("expected status safe, got %v, reason: %s", result.Status, result.Reason)
 	}
@@ -234,7 +234,7 @@ func TestGetStatus_HappyPath(t *testing.T) {
 func TestRecordEvent_And_GetHistory(t *testing.T) {
 	svc, dir := setupTestService(t, nil)
 	ctx := context.Background()
-	
+
 	// Create checkpoint to establish a TaskID implicitly
 	req := CheckpointRequest{
 		Dir: dir,
@@ -243,9 +243,9 @@ func TestRecordEvent_And_GetHistory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	taskID := cp.TaskID.String()
-	
+
 	ev, err := svc.RecordEvent(ctx, taskID, events.FileChanged, map[string]interface{}{"file": "test.go"})
 	if err != nil {
 		t.Fatalf("expected no error recording event, got %v", err)
@@ -253,16 +253,16 @@ func TestRecordEvent_And_GetHistory(t *testing.T) {
 	if ev.TaskID.String() != taskID {
 		t.Errorf("expected event task id %s, got %s", taskID, ev.TaskID.String())
 	}
-	
+
 	history, err := svc.GetHistory(ctx, taskID, 10)
 	if err != nil {
 		t.Fatalf("expected no error getting history, got %v", err)
 	}
-	
+
 	if len(history) < 2 { // Commit event from checkpoint + FileChanged
 		t.Fatalf("expected at least 2 events in history, got %d", len(history))
 	}
-	
+
 	lastEvent := history[len(history)-1]
 	if lastEvent.Type != events.FileChanged {
 		t.Errorf("expected last event to be FileChanged, got %s", lastEvent.Type)
@@ -272,15 +272,15 @@ func TestRecordEvent_And_GetHistory(t *testing.T) {
 func TestResumeTask(t *testing.T) {
 	client := &mockGitClient{
 		state: &git.RepositoryState{
-			IsClean: true,
+			IsClean:    true,
 			CommitHash: "abcd123",
-			Branch: "main",
+			Branch:     "main",
 			HasCommits: true,
 		},
 	}
 	svc, dir := setupTestService(t, client)
 	ctx := context.Background()
-	
+
 	req := CheckpointRequest{
 		Dir: dir,
 	}
@@ -288,25 +288,25 @@ func TestResumeTask(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	taskID := cp.TaskID.String()
 	packet, err := svc.ResumeTask(ctx, taskID)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	if packet.Checkpoint.ID != cp.ID {
 		t.Errorf("expected checkpoint ID %s, got %s", cp.ID, packet.Checkpoint.ID)
 	}
-	if !strings.Contains(packet.Guidance, "Safe to resume") {
-		t.Errorf("expected guidance to contain 'Safe to resume', got '%s', status: %s, reason: %s", packet.Guidance, packet.ReconciliationResult.Status, packet.ReconciliationResult.Reason)
+	if !strings.Contains(packet.Guidance, "Clean. Resume") {
+		t.Errorf("expected guidance to contain 'Clean. Resume', got '%s', status: %s, reason: %s", packet.Guidance, packet.ReconciliationResult.Status, packet.ReconciliationResult.Reason)
 	}
 }
 
 func TestUpdateObjective(t *testing.T) {
 	svc, dir := setupTestService(t, nil)
 	ctx := context.Background()
-	
+
 	req := CheckpointRequest{
 		Dir: dir,
 	}
@@ -314,19 +314,19 @@ func TestUpdateObjective(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	taskID := cp.TaskID.String()
 	newObj := "New Test Objective"
 	err = svc.UpdateObjective(ctx, taskID, newObj)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	
+
 	history, err := svc.GetHistory(ctx, taskID, 10)
 	if err != nil {
 		t.Fatalf("expected no error getting history, got %v", err)
 	}
-	
+
 	found := false
 	for _, ev := range history {
 		if ev.Type == events.TaskStarted {

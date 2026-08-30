@@ -10,7 +10,7 @@
   [![Version](https://img.shields.io/badge/Version-v1.0--beta-orange.svg)]()
 </div>
 
-> **[BETA RELEASE NOTICE]:** Wake is currently in v1.0 beta. The core checkpoint, reconciliation, and resume pipeline is fully functional and stable. MCP server and IDE integrations are under active development. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
+> **[BETA RELEASE NOTICE]:** Wake is currently in v1.0 beta. The core checkpoint, reconciliation, resume pipeline, MCP server, and IDE integrations are fully functional. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
 
 <br/>
 
@@ -36,7 +36,7 @@ It anchors the AI's memory to the physical codebase using an event-sourced SQLit
 - **Multi-Tool & AI Handoff Support**: Run multiple agents (e.g., Aider, Claude Code, custom scripts) in the same workspace. Wake handles the state synchronization so they don't step on each other's toes.
 - **AI-Interference Resilience**: If a human or another AI edits a file while the primary agent is offline, Wake detects the drift. It flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` verdicts to ensure the agent is aware of the exact changes before it resumes coding.
 - **Token-Efficient Recovery**: Instead of injecting thousands of lines of chat history to restart a session, Wake compiles the task context into a dense ~150-token recovery packet.
-- **No-Git Mode**: Wake can operate seamlessly even in repositories not tracked by Git, utilizing internal file hashing and tracking to manage state differences.
+- **Git-Aware State Tracking**: Wake anchors state to your Git repository, tracking commits, branches, and working tree changes. Non-Git mode with internal file hashing is planned for v1.1.
 - **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers locally. Uses WAL mode with serialized connection pooling for safe concurrent access by multiple tools.
 - **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
 - **Pre-Checkpoint Guard**: Blocks blind checkpoints when unreviewed modifications or untracked files exist in the working tree.
@@ -46,7 +46,7 @@ It anchors the AI's memory to the physical codebase using an event-sourced SQLit
 
 ### Build from Source
 
-Ensure you have Go 1.27+ installed:
+Ensure you have Go 1.24+ installed:
 
 ```bash
 git clone https://github.com/AshleyImmanuel/Wake.git
@@ -96,6 +96,8 @@ wake history
 | `wake resume` | Generate a compact ~150 token recovery packet for a new AI session |
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
+| `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration |
+| `wake setup <ide>` | Generate IDE configuration for Cursor, VS Code, or Claude Code |
 
 ### Checkpoint Flags
 

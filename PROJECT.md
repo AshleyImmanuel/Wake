@@ -63,7 +63,7 @@ Wake is an autonomous context checkpointing, repository state reconciliation, an
 | M1 | Harness Fixes, Security Path & Git Hardening | Fix test compilation; remediate path traversal (SEC-01, SEC-02, BUG-03); remediate git flag injection & parser bugs (SEC-05, SEC-06, BUG-04); raw-byte octal UTF-8 unescaping | none | DONE |
 | M2 | SQLite Concurrency, Data Integrity, State Engine & Pre-Checkpoint Guard | Remediate SQLite connection locks (SEC-07), migrations & indexes (SEC-08, SEC-09), version uniqueness (SEC-10), error propagation (SEC-12); complete 17-event reducer & dynamic confidence (BUG-01, BUG-02, SEC-11); optimize reconciler matching (BUG-05, BUG-06); implement Pre-Checkpoint Guard | M1 | DONE |
 | M3 | Application Service Facade & CLI Decoupling | Implement `internal/service.TaskService`; fix CLI context cancellation (SEC-13) and formatting bugs (BUG-09); refactor `cmd/` | M2 | DONE |
-| M4 | Universal IDE & Official MCP Server Integration | Implement `internal/mcp` and `cmd/mcp.go`; 7 MCP tools, 4 resources, 3 prompts; IDE configs (Cursor, VS Code, JetBrains, Claude, hooks); unit & protocol tests | M3 | PLANNED |
+| M4 | Universal IDE & Official MCP Server Integration | Implement `internal/mcp` and `cmd/mcp.go`; 7 MCP tools, 4 resources, 3 prompts; IDE configs (Cursor, VS Code, JetBrains, Claude, hooks); unit & protocol tests | M3 | DONE |
 | M5 | Comprehensive E2E, MCP Integration & Adversarial Verification | Full test suite validation (`go test -v ./...`, `go vet ./...`); MCP stdio subprocess tests; Tier 5 adversarial tests | M4 | PLANNED |
 | M6 | Independent Forensic Security & Integrity Audit | Strict security rubric audit by `teamwork_preview_auditor` (zero tolerance, binary veto) | M5 | PLANNED |
 

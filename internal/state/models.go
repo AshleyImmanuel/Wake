@@ -35,6 +35,7 @@ type State struct {
 	LastVerified string // e.g. Git commit hash
 	NextAction   string
 	Confidence   ConfidenceLevel
+	Files        map[string]string // File tracking for non-git projects
 }
 
 // Clone returns a deep copy of State to ensure thread safety.
@@ -63,6 +64,12 @@ func (s State) Clone() State {
 	if s.DoNotRepeat != nil {
 		cloned.DoNotRepeat = make([]string, len(s.DoNotRepeat))
 		copy(cloned.DoNotRepeat, s.DoNotRepeat)
+	}
+	if s.Files != nil {
+		cloned.Files = make(map[string]string, len(s.Files))
+		for k, v := range s.Files {
+			cloned.Files[k] = v
+		}
 	}
 	return cloned
 }

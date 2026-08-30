@@ -238,12 +238,17 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 	// - zero changed files and zero constraint violations
 	isRepoClean := len(result.ChangedFiles) == 0
 	hasMatchingNonEmptyCommit := cp.Commit != "" && repo.CommitHash != "" && cp.Commit == repo.CommitHash
+	isNonGitMatch := cp.Commit == "" && repo.CommitHash == ""
 	isBranchValid := result.BranchMatch
 
-	if isRepoClean && hasMatchingNonEmptyCommit && isBranchValid && len(result.ConstraintViolations) == 0 && len(result.InvalidatedClaims) == 0 {
+	if isRepoClean && (hasMatchingNonEmptyCommit || isNonGitMatch) && isBranchValid && len(result.ConstraintViolations) == 0 && len(result.InvalidatedClaims) == 0 {
 		result.Status = StatusSafe
 		result.ConfidenceLevel = state.ConfidenceHigh
-		result.Reason = "Repository exactly matches checkpoint commit and working tree is clean"
+		if isNonGitMatch {
+			result.Reason = "Workspace exactly matches checkpoint state and is clean"
+		} else {
+			result.Reason = "Repository exactly matches checkpoint commit and working tree is clean"
+		}
 		return result
 	}
 
@@ -255,7 +260,11 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 	if !result.BranchMatch {
 		result.Reason = fmt.Sprintf("Repository branch '%s' does not match checkpoint branch '%s'", repoBranch, cpBranch)
 	} else if cp.Commit == "" || repo.CommitHash == "" {
-		result.Reason = "Repository or checkpoint has no recorded commit"
+		if len(result.ChangedFiles) > 0 {
+			result.Reason = fmt.Sprintf("Workspace has %d locally modified file(s)", len(result.ChangedFiles))
+		} else {
+			result.Reason = "Workspace state has drifted from checkpoint"
+		}
 	} else if cp.Commit != repo.CommitHash {
 		result.Reason = fmt.Sprintf("Repository commit '%s' differs from checkpoint commit '%s'", repo.CommitHash, cp.Commit)
 	} else if len(result.ChangedFiles) > 0 {
@@ -314,6 +323,31 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 		}
 		if len(changed) > 0 {
 			commitChangedFiles = changed
+		}
+	}
+
+	// Local file drift for non-git workspaces
+	if repoState.CommitHash == "" && cp.StateData.Files != nil {
+		if currentFiles, err := ScanDirectory(repoState.RootPath); err == nil {
+			var localChanged []string
+			for file, mod := range currentFiles {
+				if oldMod, exists := cp.StateData.Files[file]; !exists || oldMod != mod {
+					localChanged = append(localChanged, file)
+				}
+			}
+			for oldFile := range cp.StateData.Files {
+				if _, exists := currentFiles[oldFile]; !exists {
+					localChanged = append(localChanged, oldFile)
+					repoState.UnstagedFiles = append(repoState.UnstagedFiles, git.FileStatus{
+						Path:           oldFile,
+						WorkTreeStatus: git.StatusDeleted,
+					})
+				}
+			}
+			repoState.ModifiedFiles = append(repoState.ModifiedFiles, localChanged...)
+			if len(localChanged) > 0 {
+				repoState.IsClean = false
+			}
 		}
 	}
 
@@ -549,7 +583,7 @@ func extractCandidatePaths(s string) []string {
 			continue
 		}
 		isPath := looksLikeFilePath(t) || (strings.Contains(t, "/") && !strings.Contains(t, "://") && isSafeRelativePath(strings.ReplaceAll(t, "*", "x")))
-		
+
 		if !isPath && i+1 < len(tokens) {
 			next := strings.ToLower(tokens[i+1])
 			if next == "directory" || next == "dir" || next == "folder" || next == "package" || next == "pkg" || next == "module" {

@@ -147,7 +147,7 @@ func TestParsePorcelainStatus(t *testing.T) {
 func TestParseNameOnlyList(t *testing.T) {
 	output := "file1.txt\n\n  \nfile2.txt\n\"file 3.txt\"\nfile1.txt\n"
 	expected := []string{"  ", "file 3.txt", "file1.txt", "file2.txt"}
-	
+
 	result := ParseNameOnlyList(output)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("ParseNameOnlyList mismatch: got %v, want %v", result, expected)
@@ -167,7 +167,7 @@ func TestExtractModifiedFiles(t *testing.T) {
 		UnmergedFiles:  []string{"unmerged.txt"},
 	}
 	expected := []string{"old_renamed.txt", "renamed.txt", "staged.txt", "unmerged.txt", "unstaged.txt", "untracked.txt"}
-	
+
 	result := ExtractModifiedFiles(status)
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("ExtractModifiedFiles mismatch: got %v, want %v", result, expected)

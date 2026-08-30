@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/AshleyImmanuel/Wake/internal/events"
 	"github.com/AshleyImmanuel/Wake/internal/state"
+	"github.com/google/uuid"
 )
 
 // Helper for assertions
@@ -135,7 +135,7 @@ func TestCheckpoints(t *testing.T) {
 	t.Run("nil db error", func(t *testing.T) {
 		err := SaveCheckpoint(ctx, nil, state.Checkpoint{})
 		assertError(t, err, "save with nil db")
-		
+
 		_, err = GetLatestCheckpoint(ctx, nil, "")
 		assertError(t, err, "get with nil db")
 	})
@@ -188,7 +188,7 @@ func TestCheckpoints(t *testing.T) {
 		assertEqual(t, cp.Commit, fetched.Commit, "Commit")
 		assertEqual(t, cp.StateVersion, fetched.StateVersion, "StateVersion")
 		assertEqual(t, cp.EventPosition, fetched.EventPosition, "EventPosition")
-		
+
 		// JSON serialization converts string slice to nil if empty, so let's only compare initialized fields
 		assertEqual(t, cp.StateData.Objective, fetched.StateData.Objective, "Objective")
 		assertEqual(t, cp.StateData.Constraints, fetched.StateData.Constraints, "Constraints")
@@ -226,7 +226,7 @@ func TestCheckpoints(t *testing.T) {
 		defer db.Close()
 
 		taskID := uuid.New()
-		
+
 		// Insert older
 		cp1 := state.Checkpoint{TaskID: taskID, StateVersion: 1, Timestamp: "2020-01-01T00:00:00Z"}
 		err = SaveCheckpoint(ctx, db, cp1)
@@ -275,7 +275,7 @@ func TestCheckpoints(t *testing.T) {
 		assertNoError(t, err)
 		_, err = GetLatestCheckpoint(ctx, db, "invalid-task")
 		assertError(t, err, "parsing invalid task uuid")
-		
+
 		// Fix TaskID, break state_data
 		fixedTask := uuid.New().String()
 		_, err = db.Exec("UPDATE checkpoints SET task_id=?, state_data='invalid-json' WHERE task_id='invalid-task'", fixedTask)
@@ -291,7 +291,7 @@ func TestEvents(t *testing.T) {
 	t.Run("nil db error", func(t *testing.T) {
 		err := SaveEvent(ctx, nil, events.Event{})
 		assertError(t, err, "save with nil db")
-		
+
 		_, err = GetEvents(ctx, nil, "")
 		assertError(t, err, "get with nil db")
 	})
@@ -306,7 +306,7 @@ func TestEvents(t *testing.T) {
 			ID:        uuid.New(),
 			TaskID:    uuid.New(),
 			Type:      events.TaskStarted,
-			Timestamp: time.Now().UTC().Truncate(time.Second), // Truncate for exact RFC3339 comparison
+			Timestamp: time.Now().UTC().Truncate(time.Second),                     // Truncate for exact RFC3339 comparison
 			Payload:   map[string]interface{}{"key": "value", "num": float64(42)}, // JSON unmarshals numbers as float64
 		}
 
@@ -362,7 +362,7 @@ func TestEvents(t *testing.T) {
 		defer db.Close()
 
 		taskID := uuid.New()
-		
+
 		// Add older event
 		err = SaveEvent(ctx, db, events.Event{TaskID: taskID, Timestamp: time.Now().Add(-1 * time.Hour)})
 		assertNoError(t, err)

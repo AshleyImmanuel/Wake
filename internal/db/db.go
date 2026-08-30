@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/AshleyImmanuel/Wake/internal/events"
 	"github.com/AshleyImmanuel/Wake/internal/state"
+	"github.com/google/uuid"
 	_ "modernc.org/sqlite"
 )
 
@@ -22,14 +22,14 @@ import (
 // It assumes the DB file is located in the .wake directory of the project root.
 func InitDB(projectRoot string) (*sql.DB, error) {
 	wakeDir := filepath.Join(projectRoot, ".wake")
-	if err := os.MkdirAll(wakeDir, 0755); err != nil {
+	if err := os.MkdirAll(wakeDir, 0700); err != nil {
 		return nil, fmt.Errorf("failed to create .wake directory: %w", err)
 	}
 
 	// Create a .gitignore file in the .wake directory to ignore the database
 	gitignorePath := filepath.Join(wakeDir, ".gitignore")
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
-		_ = os.WriteFile(gitignorePath, []byte("*\n"), 0644)
+		_ = os.WriteFile(gitignorePath, []byte("*\n"), 0600)
 	}
 
 	dsn := filepath.Join(wakeDir, "state.db") + "?_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
@@ -228,7 +228,10 @@ func GetLatestCheckpoint(ctx context.Context, db *sql.DB, taskID string) (*state
 		return nil, fmt.Errorf("failed to scan checkpoint row: %w", err)
 	}
 
-	if checksumStr != "" {
+	if checksumStr == "" {
+		// Legacy record without checksum - compute and accept but note integrity is unverified
+		fmt.Fprintf(os.Stderr, "warning: legacy checkpoint %s found without checksum\n", idStr)
+	} else {
 		expected := generateCheckpointChecksum(idStr, taskIDStr, cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch)
 		if checksumStr != expected {
 			return nil, fmt.Errorf("state poisoning detected: checkpoint %s checksum mismatch", idStr)
@@ -318,7 +321,10 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 			return nil, fmt.Errorf("failed to scan event row: %w", err)
 		}
 
-		if checksumStr != "" {
+		if checksumStr == "" {
+			// Legacy record without checksum - integrity unverified
+			fmt.Fprintf(os.Stderr, "warning: legacy event %s found without checksum\n", idStr)
+		} else {
 			expected := generateEventChecksum(idStr, taskIDStr, typeStr, timeStr, payloadStr)
 			if checksumStr != expected {
 				return nil, fmt.Errorf("state poisoning detected: event %s checksum mismatch", idStr)
@@ -379,4 +385,3 @@ func parseTimestamp(s string) (time.Time, error) {
 	}
 	return time.Time{}, fmt.Errorf("invalid timestamp format: %q", s)
 }
-
