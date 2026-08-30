@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -41,13 +40,8 @@ var markCmd = &cobra.Command{
 		}
 
 		// SANITIZE INPUTS to prevent Log Injection and Evasion vulnerabilities
-		targetFile = strings.ReplaceAll(targetFile, "\n", "")
-		targetFile = strings.ReplaceAll(targetFile, "\r", "")
-		targetFile = strings.ReplaceAll(targetFile, "|", "")
-		
-		markAuthor = strings.ReplaceAll(markAuthor, "\n", "")
-		markAuthor = strings.ReplaceAll(markAuthor, "\r", "")
-		markAuthor = strings.ReplaceAll(markAuthor, "|", "")
+		targetFile = sanitizeInput(targetFile)
+		markAuthor = sanitizeInput(markAuthor)
 
 		targetDir, err := os.Getwd()
 		if err != nil {
@@ -77,4 +71,14 @@ func init() {
 	markCmd.Flags().StringVar(&markFile, "file", "", "Path to the file being modified")
 	markCmd.Flags().StringVar(&markAuthor, "author", "", "Author (AI or HUMAN)")
 	rootCmd.AddCommand(markCmd)
+}
+
+func sanitizeInput(s string) string {
+	result := make([]rune, 0, len(s))
+	for _, r := range s {
+		if r >= 32 && r < 127 && r != '|' {
+			result = append(result, r)
+		}
+	}
+	return string(result)
 }

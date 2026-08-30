@@ -16,6 +16,7 @@ import (
 	"wake/internal/mcp"
 	"wake/internal/service"
 	"wake/internal/stash"
+	"github.com/gen2brain/beeep"
 )
 
 var mcpCmd = &cobra.Command{
@@ -91,6 +92,12 @@ var mcpCmd = &cobra.Command{
 								Dir:       repoRoot,
 							})
 							lastCheckpointModTime = currentModTime
+							
+							go func() {
+								if err := beeep.Notify("Wake", "Auto-checkpoint created successfully after detecting idle file modifications.", ""); err != nil {
+									fmt.Printf("[DAEMON] Failed to send desktop notification: %v\n", err)
+								}
+							}()
 						}
 					}
 				}

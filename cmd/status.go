@@ -16,6 +16,7 @@ var (
 	statusTaskID string
 	statusDir    string
 	statusJSON   bool
+	statusAGHook bool
 )
 
 var statusCmd = &cobra.Command{
@@ -58,6 +59,17 @@ var statusCmd = &cobra.Command{
 				fmt.Println(string(out))
 				return nil
 			}
+			if statusAGHook {
+				out, _ := json.Marshal(map[string]interface{}{
+					"injectSteps": []map[string]interface{}{
+						{
+							"ephemeralMessage": "Wake Status: Unknown (No checkpoints found).",
+						},
+					},
+				})
+				fmt.Println(string(out))
+				return nil
+			}
 			fmt.Println("======================================================================")
 			fmt.Println("WAKE STATUS: NO CHECKPOINT FOUND OR ERROR")
 			fmt.Println("======================================================================")
@@ -72,6 +84,23 @@ var statusCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("failed to format json output: %w", err)
 			}
+			fmt.Println(string(out))
+			return nil
+		}
+
+		if statusAGHook {
+			msg := fmt.Sprintf("Wake Status: [%s]", result.Status)
+			if result.Reason != "" {
+				msg += fmt.Sprintf(" - %s", result.Reason)
+			}
+			
+			out, _ := json.Marshal(map[string]interface{}{
+				"injectSteps": []map[string]interface{}{
+					{
+						"ephemeralMessage": msg,
+					},
+				},
+			})
 			fmt.Println(string(out))
 			return nil
 		}
@@ -162,5 +191,6 @@ func init() {
 	statusCmd.Flags().StringVar(&statusTaskID, "task-id", "", "Task UUID to check (optional)")
 	statusCmd.Flags().StringVar(&statusDir, "dir", "", "Repository directory (defaults to current directory)")
 	statusCmd.Flags().BoolVar(&statusJSON, "json", false, "Output report as JSON")
+	statusCmd.Flags().BoolVar(&statusAGHook, "ag-hook", false, "Output as Antigravity PreInvocation hook JSON")
 	rootCmd.AddCommand(statusCmd)
 }

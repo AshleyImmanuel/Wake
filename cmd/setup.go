@@ -231,7 +231,7 @@ Supported IDEs: Cursor, VS Code (Copilot), Windsurf, Kiro, Claude Desktop/Code, 
 }
 
 func writeConfig(dir, file string, data []byte) error {
-	if err := os.MkdirAll(dir, 0750); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 	return os.WriteFile(filepath.Join(dir, file), data, 0600)

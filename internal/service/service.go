@@ -165,6 +165,9 @@ func (s *taskService) GetStatus(ctx context.Context, req StatusRequest) (*reconc
 
 	cp, err := db.GetLatestCheckpoint(ctx, s.db, req.TaskID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no checkpoints found in workspace (try running wake_checkpoint first)")
+		}
 		return nil, err
 	}
 

@@ -278,6 +278,26 @@ Wake is built to **complement**, not replace, existing AI coding tools:
 | **Cursor / Aider** | IDE and codebase semantic search | Wake acts as a background "save state" layer to persist constraints across terminal reboots and handoffs |
 | **Devin / Cloud Agents** | Autonomous execution in persistent cloud environments | Wake provides a local-first alternative for developers who want state-persistence on their local machine |
 
+## FAQ / Common Questions
+
+**Q: Why use Wake instead of just running `git status`?**
+A: While `git status` tells you what files changed, it doesn't give autonomous AI agents actionable instructions on *how to recover*. Wake synthesizes a highly condensed ~150-token recovery packet, categorizes drift (e.g., `[HUMAN_AHEAD]`, `[CONFLICT]`), and prevents agents from blindly overwriting your work.
+
+**Q: Will Wake consume a lot of token context in my AI sessions?**
+A: No. Wake is explicitly designed to be token-efficient. Instead of injecting your entire chat history to recover state, Wake provides a minimal payload containing only the exact differentials and constraints necessary for the agent to resume its task. 
+
+**Q: Does Wake require me to change my IDE or coding environment?**
+A: Not at all. Wake operates as a native Model Context Protocol (MCP) server that seamlessly plugs into Cursor, VS Code (via Copilot), Windsurf, Claude Desktop, and more. It runs entirely in the background.
+
+**Q: What happens if an AI tries to overwrite a file I am currently editing?**
+A: Wake's **Write-Write Conflict Detection** and **Continuous Recovery Stashing** protect your code. If the background daemon detects a manual human edit, it proactively stashes your work and issues a hard `[CONFLICT]` block to the agent's MCP tool, forcing the AI to evaluate your changes first.
+
+**Q: Is Wake sending my code to a cloud server?**
+A: No. Wake is **100% local, air-gapped, and telemetry-free**. All state data, checkpoints, and event logs are stored in a local `.wake/` SQLite ledger inside your repository. No code ever leaves your machine.
+
+**Q: Can I use Wake in a repository that isn't using Git?**
+A: Yes! Wake includes a built-in Git-less fallback hash engine. While it integrates deeply with Git when available, it operates flawlessly using native filesystem SHA-256 hashing if Git is not present.
+
 ## Security & Compliance (DPDP Act Ready)
 
 Wake is built for high-risk, commercial, and enterprise-grade environments with **Privacy by Design**:

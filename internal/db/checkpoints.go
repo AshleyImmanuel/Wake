@@ -216,9 +216,15 @@ func GetCheckpointByVersion(ctx context.Context, db *sql.DB, taskID string, vers
 		}
 	}
 
-	cp.ID, _ = uuid.Parse(idStr)
-	cp.TaskID, _ = uuid.Parse(taskIDStr)
-	cp.SessionID, _ = uuid.Parse(sessionIDStr)
+	if cp.ID, err = uuid.Parse(idStr); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: invalid id %q: %v\n", idStr, err)
+	}
+	if cp.TaskID, err = uuid.Parse(taskIDStr); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: invalid task_id %q: %v\n", taskIDStr, err)
+	}
+	if cp.SessionID, err = uuid.Parse(sessionIDStr); err != nil {
+		fmt.Fprintf(os.Stderr, "warning: invalid session_id %q: %v\n", sessionIDStr, err)
+	}
 
 	if stateDataStr != "" {
 		if err := json.Unmarshal([]byte(stateDataStr), &cp.StateData); err != nil {
@@ -277,9 +283,16 @@ func GetRecentCheckpoints(ctx context.Context, db *sql.DB, taskID string, limit 
 			}
 		}
 
-		cp.ID, _ = uuid.Parse(idStr)
-		cp.TaskID, _ = uuid.Parse(taskIDStr)
-		cp.SessionID, _ = uuid.Parse(sessionIDStr)
+		var parseErr error
+		if cp.ID, parseErr = uuid.Parse(idStr); parseErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: invalid id %q: %v\n", idStr, parseErr)
+		}
+		if cp.TaskID, parseErr = uuid.Parse(taskIDStr); parseErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: invalid task_id %q: %v\n", taskIDStr, parseErr)
+		}
+		if cp.SessionID, parseErr = uuid.Parse(sessionIDStr); parseErr != nil {
+			fmt.Fprintf(os.Stderr, "warning: invalid session_id %q: %v\n", sessionIDStr, parseErr)
+		}
 
 		if stateDataStr != "" {
 			if err := json.Unmarshal([]byte(stateDataStr), &cp.StateData); err != nil {

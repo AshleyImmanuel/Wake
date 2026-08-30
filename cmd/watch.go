@@ -13,6 +13,7 @@ import (
 	"wake/internal/events"
 	"wake/internal/git"
 	"wake/internal/service"
+	"github.com/gen2brain/beeep"
 )
 
 var watchDir string
@@ -124,6 +125,11 @@ var watchCmd = &cobra.Command{
 							fmt.Printf("Failed to record FileChanged for %s: %v\n", file, err)
 						} else {
 							fmt.Printf("[DAEMON] Auto-recorded modification: %s\n", file)
+							go func(f string) {
+								if err := beeep.Notify("Wake", "Auto-recorded human modification in: "+f, ""); err != nil {
+									fmt.Printf("[DAEMON] Failed to send desktop notification: %v\n", err)
+								}
+							}(file)
 						}
 					}
 					// Clear the map

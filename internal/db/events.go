@@ -109,8 +109,9 @@ func GetEvents(ctx context.Context, db *sql.DB, taskID string) ([]events.Event, 
 			return nil, fmt.Errorf("failed to parse event task_id %q: %w", taskIDStr, err)
 		}
 		e.TaskID = parsedTaskID
-		parsedSessionID, _ := uuid.Parse(sessionIDStr)
-		e.SessionID = parsedSessionID
+		if e.SessionID, err = uuid.Parse(sessionIDStr); err != nil {
+			fmt.Fprintf(os.Stderr, "warning: invalid session_id %q: %v\n", sessionIDStr, err)
+		}
 
 		e.Type = events.EventType(typeStr)
 
