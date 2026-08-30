@@ -1,20 +1,24 @@
-<div align="center">
+<p align="center">
   <img src="assets/banner.jpg" alt="Wake: AI State Recovery Engine Banner" width="100%" />
-  
-  <br/>
-  
-  <h1>Wake</h1>
-  <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
-  
-  [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
-  [![Version](https://img.shields.io/badge/Version-v1.2.0-blue.svg)](https://github.com/AshleyImmanuel/Wake/releases)
-  [![npm](https://img.shields.io/npm/v/wake-engine?label=npm&color=CB3837)](https://www.npmjs.com/package/wake-engine)
-  [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
-</div>
+</p>
+
+<h1 align="center">Wake</h1>
+<p align="center"><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-Proprietary-red.svg" alt="License: Proprietary"></a>
+  <a href="https://github.com/AshleyImmanuel/Wake/releases"><img src="https://img.shields.io/badge/Version-v1.2.0-blue.svg" alt="Version"></a>
+  <a href="https://www.npmjs.com/package/wake-engine"><img src="https://img.shields.io/npm/v/wake-engine?label=npm&amp;color=CB3837" alt="npm"></a>
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg" alt="Platform">
+</p>
 
 > **Tags:** `wake`, `mcp-server`, `ai-agents`, `state-machine`, `local-first`
 
-> **[V1.1 RELEASE]:** Wake is currently in v1.1. The core checkpoint, reconciliation, resume pipeline, MCP server, and IDE integrations are fully functional. v1.1 introduces Universal Continuous Recovery Stashing, Git-less Fallback, and Write-Write Conflict Detection. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
+> **[V1.2 RELEASE]:** Wake v1.2 introduces **Universal IDE Support**. The new `wake setup` command auto-generates native MCP configurations and lifecycle hooks (auto-save, conflict checks) for **Cursor, VS Code (Copilot), Windsurf, Kiro, Claude Desktop/Code, Zed, and Antigravity**.
+
+> **[V1.1 RELEASE]:** Introduces Universal Continuous Recovery Stashing, Git-less Fallback hashing, and Write-Write Conflict Detection.
+
+If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
 
 <br/>
 
