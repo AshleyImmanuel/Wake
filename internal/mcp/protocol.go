@@ -44,9 +44,9 @@ type InitializeResult struct {
 }
 
 type ServerCapabilities struct {
-	Prompts   map[string]interface{} `json:"prompts,omitempty"`
-	Resources map[string]interface{} `json:"resources,omitempty"`
-	Tools     map[string]interface{} `json:"tools,omitempty"`
+	Prompts   map[string]interface{} `json:"prompts"`
+	Resources map[string]interface{} `json:"resources"`
+	Tools     map[string]interface{} `json:"tools"`
 }
 
 type Tool struct {

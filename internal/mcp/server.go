@@ -112,7 +112,7 @@ func (s *Server) handleRequest(ctx context.Context, out *json.Encoder, req JSONR
 			},
 		}
 		s.sendResult(out, req.ID, res)
-	case "initialized":
+	case "notifications/initialized":
 		// notification, do nothing
 	case "tools/list":
 		res := ListToolsResult{
