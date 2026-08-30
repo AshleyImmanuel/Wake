@@ -423,8 +423,38 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 		}
 	}
 
+	// 4.5 Filter out false-positive InvalidatedClaims using Semantic Diff Analyzer
+	if repoState.HasCommits && len(result.InvalidatedClaims) > 0 {
+		var finalInvalidations []string
+		for _, invalidation := range result.InvalidatedClaims {
+			// Extract file path from invalidation message
+			parts := strings.Split(invalidation, ": ")
+			if len(parts) == 2 {
+				file := strings.TrimSpace(parts[1])
+
+				// Try to get diff. If we can't get it, or it IS semantic, keep the invalidation
+				diff, err := gitClient.GetFileDiff(ctx, repoPath, file)
+				if err != nil || IsSemanticChange(diff) {
+					finalInvalidations = append(finalInvalidations, invalidation)
+				}
+			} else {
+				finalInvalidations = append(finalInvalidations, invalidation)
+			}
+		}
+
+		result.InvalidatedClaims = finalInvalidations
+
+		// If we dropped all invalidations, downgrade the CONFLICT to STALE
+		if len(result.InvalidatedClaims) == 0 && len(result.ConstraintViolations) == 0 && result.Status == StatusConflict {
+			result.Status = StatusStale
+			result.ConfidenceLevel = state.ConfidenceLow
+			result.Reason = "Workspace has locally modified file(s) (semantic checks passed)"
+		}
+	}
+
 	return result, nil
 }
+
 
 // normalizePath converts backslashes to forward slashes, cleans the path, and strips leading ./ or /
 func normalizePath(p string) string {
