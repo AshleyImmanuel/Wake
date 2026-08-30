@@ -1,8 +1,17 @@
 package state
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"strings"
 )
+
+// generateShortID creates a random 8-character hex string
+func generateShortID() string {
+	b := make([]byte, 4)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
 
 // Safe payload extraction helpers
 

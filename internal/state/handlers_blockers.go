@@ -3,6 +3,9 @@ package state
 func handleBlockerCreated(currentState *State, payload map[string]interface{}) {
 	if desc := getString(payload, "description"); desc != "" {
 		id := getString(payload, "id")
+		if id == "" {
+			id = "blk-" + generateShortID()
+		}
 		found := false
 		for i, b := range currentState.Blocked {
 			if id != "" && b.ID == id {
