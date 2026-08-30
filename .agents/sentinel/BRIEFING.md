@@ -1,7 +1,7 @@
-# BRIEFING — 2026-08-28T21:03:18Z
+# BRIEFING — 2026-08-28T21:38:00Z
 
 ## Mission
-Conduct a comprehensive security and bug audit of the entire Wake codebase, implement direct remediations, activate caveman token optimization, and build universal IDE / MCP integration wrappers.
+Conduct a comprehensive security and bug audit of the entire Wake codebase, implement direct remediations (including Pre-Checkpoint Guard in Milestone 2), activate caveman token optimization, and build universal IDE / MCP integration wrappers.
 
 ## 🔒 My Identity
 - Archetype: sentinel
@@ -15,6 +15,7 @@ Conduct a comprehensive security and bug audit of the entire Wake codebase, impl
 - Active Orchestrator (Milestone 3): 9ef0f698-67c0-4982-8caa-4525a1e91369
 - Active Cron 1 (Progress Reporting): task-49 (*/8 * * * *)
 - Active Cron 2 (Liveness Check): task-51 (*/10 * * * *)
+- Active Orchestrator (Successor Gen 4): 2269a8b9-1f89-4cc2-8523-a80ae3ece84f
 
 ## 🔒 Key Constraints
 - No technical decisions — relay only
@@ -22,16 +23,18 @@ Conduct a comprehensive security and bug audit of the entire Wake codebase, impl
 - Never use emojis, use icons or svg
 - Extended timeouts for mathematical structures if applicable (N/A)
 - Enforce token optimization with caveman skill across team
+- Enforce Pre-Checkpoint Guard requirement in Milestone 2
 
 ## User Context
-- **Last user request**: Conduct comprehensive security and bug audit of Wake codebase, implement direct fixes, use caveman skill for token optimization, and build universal IDE & MCP integration wrappers.
+- **Last user request**: [URGENT ZERO-DAY DISCOVERY]: Implement a "Pre-Checkpoint Guard" in core Go engine during Milestone 2 to prevent untracked/human-modified files from being blindly scooped into checkpoints.
 - **Pending clarifications**: none
 - **Delivered results**:
   - Phase 2 (Reconciliation) completed previously
   - Codebase review, modularization, optimization, and testing completed previously
+  - Milestone 1 (Harness Fixes, Security Path & Git Hardening) completed and verified
 
 ## Project Status
-- **Phase**: in progress
+- **Phase**: in progress (Milestone 2)
 - **Route**: General (teamwork_preview_orchestrator)
 - **Routing Rationale**: Security audit, bug remediation, caveman token optimization, and MCP server / IDE integration wrappers constitute a multi-faceted SWE project requiring decomposition and specialist delegation.
 
@@ -44,3 +47,5 @@ Conduct a comprehensive security and bug audit of the entire Wake codebase, impl
 - C:/Users/USER/Desktop/Wake/.agents/ORIGINAL_REQUEST.md — Verbatim user request record
 - C:/Users/USER/Desktop/Wake/ORIGINAL_REQUEST.md — Verbatim user request record in workspace root
 - C:/Users/USER/Desktop/Wake/.agents/orchestrator_3/DISPATCH.md — Dispatch instructions for Project Orchestrator
+- C:/Users/USER/Desktop/Sentinel/.agents/orchestrator_4/progress.md — Active Orchestrator progress log
+- C:/Users/USER/Desktop/Sentinel/PROJECT.md — Global project plan and architecture
