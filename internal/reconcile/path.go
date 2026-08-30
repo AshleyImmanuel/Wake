@@ -25,6 +25,7 @@ var knownStandaloneFiles = map[string]bool{
 	"makefile": true, "dockerfile": true, "readme": true, "license": true,
 	"procfile": true, "jenkinsfile": true, "gemfile": true, "rakefile": true,
 }
+
 // normalizePath converts backslashes to forward slashes, cleans the path, and strips leading ./ or /
 func normalizePath(p string) string {
 	p = strings.TrimSpace(p)
@@ -121,6 +122,7 @@ var stopWords = map[string]bool{
 	"module": true, "code": true, "source": true, "folder": true, "path": true, "legacy": true,
 	"use": true, "using": true, "always": true, "active": true, "unmodified": true, "unchanged": true,
 }
+
 // extractTokens splits a string by whitespace and punctuation delimiters.
 func extractTokens(s string) []string {
 	delims := regexp.MustCompile(`[\s,;:()[\]"'\x60]+`)
@@ -294,6 +296,7 @@ func looksLikeFilePath(s string) bool {
 
 	return false
 }
+
 // containsString checks if slice contains target.
 func containsString(slice []string, target string) bool {
 	for _, s := range slice {

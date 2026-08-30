@@ -85,4 +85,3 @@ func FormatResumePacket(packet *ResumePacket) string {
 
 	return sb.String()
 }
-

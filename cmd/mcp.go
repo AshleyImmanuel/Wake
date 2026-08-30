@@ -3,15 +3,16 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"github.com/AshleyImmanuel/Wake/internal/db"
 	"github.com/AshleyImmanuel/Wake/internal/git"
 	"github.com/AshleyImmanuel/Wake/internal/mcp"
 	"github.com/AshleyImmanuel/Wake/internal/service"
 	"github.com/spf13/cobra"
+	"os"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
 )
 
 var mcpCmd = &cobra.Command{
@@ -46,8 +47,55 @@ var mcpCmd = &cobra.Command{
 			cancel()
 		}()
 
+		// Embedded File Watcher / Auto-Checkpointer (Highly Optimized)
+		go func() {
+			ticker := time.NewTicker(5 * time.Second)
+			defer ticker.Stop()
+
+			lastCheckpointModTime := getModifiedFilesMaxTime(ctx, gitClient, repoRoot)
+
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					currentModTime := getModifiedFilesMaxTime(ctx, gitClient, repoRoot)
+					if currentModTime.After(lastCheckpointModTime) {
+						// Check if stable (debounce)
+						time.Sleep(3 * time.Second)
+						if getModifiedFilesMaxTime(ctx, gitClient, repoRoot).Equal(currentModTime) {
+							svc.CreateCheckpoint(ctx, service.CheckpointRequest{
+								Objective: "Auto-checkpoint by Wake MCP Daemon",
+								Dir:       repoRoot,
+							})
+							lastCheckpointModTime = currentModTime
+						}
+					}
+				}
+			}
+		}()
+
 		return server.Serve(ctx, os.Stdin, os.Stdout)
 	},
+}
+
+func getModifiedFilesMaxTime(ctx context.Context, gitClient git.Client, root string) time.Time {
+	var maxTime time.Time
+	status, err := gitClient.GetStatus(ctx, root)
+	if err != nil {
+		return maxTime
+	}
+
+	filesToCheck := git.ExtractModifiedFiles(status)
+
+	for _, f := range filesToCheck {
+		absPath := filepath.Join(root, f)
+		info, err := os.Stat(absPath)
+		if err == nil && info.ModTime().After(maxTime) {
+			maxTime = info.ModTime()
+		}
+	}
+	return maxTime
 }
 
 func init() {

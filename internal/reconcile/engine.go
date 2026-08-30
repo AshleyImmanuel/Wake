@@ -162,7 +162,7 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 	// 4. CONFLICT CHECK: Invalidation of Completed / DoNotRepeat claims
 	for _, file := range result.ChangedFiles {
 		if _, isRename := renameMap[file]; isRename {
-			// Skip conflict generation for renamed files. 
+			// Skip conflict generation for renamed files.
 			// We treat them as safely moved rather than tampered/deleted.
 			continue
 		}
@@ -185,7 +185,7 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 	deletedFiles := getDeletedFiles(repo)
 	for _, delFile := range deletedFiles {
 		if _, isRename := renameMap[delFile]; isRename {
-			// Skip conflict generation for renamed files. 
+			// Skip conflict generation for renamed files.
 			// We treat them as safely moved rather than tampered/deleted.
 			continue
 		}
@@ -412,11 +412,11 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 				file := strings.TrimSpace(parts[1])
 
 				isSemantic := true
-				
+
 				if strings.HasSuffix(file, ".go") {
 					// 100% accurate AST parser for Go files (0 tokens, fully local)
 					oldCode, _ := gitClient.GetFileAtCommit(ctx, repoPath, file, cp.Commit)
-					
+
 					// Get the current file contents from disk
 					fullPath, ok := resolveSafeRepoPath(root, file)
 					if ok {
@@ -454,5 +454,3 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 
 	return result, nil
 }
-
-

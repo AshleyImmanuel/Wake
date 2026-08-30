@@ -311,7 +311,7 @@ func (c *client) GetFileDiff(ctx context.Context, repoPath string, filePath stri
 	if len(stdout) > 0 {
 		return string(stdout), nil
 	}
-	
+
 	// Check staged if unstaged is empty
 	stdout, _, err = c.runner.Run(ctx, repoPath, "diff", "--staged", "--", filePath)
 	if err != nil {
@@ -331,4 +331,3 @@ func (c *client) GetFileAtCommit(ctx context.Context, repoPath, filePath, commit
 	}
 	return string(stdout), nil
 }
-

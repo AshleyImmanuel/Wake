@@ -56,7 +56,9 @@ It anchors the agent's memory to the local codebase using a highly performant, e
 - **Hard Constraint Enforcement**: If an agent is instructed to avoid specific files, and external modifications occur, Wake throws a hard `[CONFLICT]` to guarantee work preservation.
 - **Pre-Checkpoint Safeguards**: Blocks state snapshots when unreviewed modifications or untracked files are detected in the working directory.
 - **Dynamic Feature Pivots**: Execute `wake objective "New Goal"` to safely transition the agent's state without a destructive reset.
+- **Zero-Config Background File Watcher**: Wake's MCP server seamlessly embeds a lightweight filesystem watcher. When an IDE is connected to Wake's MCP server, Wake silently monitors for idle file modifications and synthesizes checkpoints automatically in the background—no explicit tool calling required.
 - **Universal MCP Server**: Built-in Model Context Protocol support (`wake mcp`). Seamlessly plug Wake into cloud-based AI agents (Claude Desktop, Cursor) or 100% local, free, air-gapped models (Ollama, LM Studio) for maximum privacy—with zero extra configuration.
+
 ## Quickstart
 
 ### Build from Source
@@ -130,8 +132,8 @@ Add the following to your MCP configuration to execute Wake dynamically:
 | `wake resume` | Generate a compact ~150 token recovery packet for a new AI session |
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
-| `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration |
-| `wake setup <ide>` | Generate IDE configuration for Cursor, VS Code, or Claude Code |
+| `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration (auto-starts background watcher) |
+| `wake setup <ide>` | Generate IDE configuration (Cursor, VS Code, Claude Code). Use `--antigravity` to auto-generate `hooks.json` for native Antigravity IDE interception. |
 
 ### Checkpoint Flags
 
