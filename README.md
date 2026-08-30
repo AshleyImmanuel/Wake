@@ -1,0 +1,93 @@
+<div align="center">
+  <img src="assets/banner.jpg" alt="Wake: AI State Recovery Engine Banner" width="100%" />
+  
+  <br/>
+  
+  <h1>Wake</h1>
+  <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
+  
+  [![Go Report Card](https://goreportcard.com/badge/github.com/AshleyImmanuel/Wake)](https://goreportcard.com/report/github.com/AshleyImmanuel/Wake)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+  [![Version](https://img.shields.io/badge/Version-v1.0--beta-green.svg)]()
+</div>
+
+<br/>
+
+## The Problem
+
+By 2026, AI coding agents (like Claude Code, Aider, and Cursor) are incredibly capable, but they suffer from **Amnesia and Context Drift**. 
+
+When you close your laptop, restart your IDE, or run into a token limit, the AI session dies. When you restart it, you either:
+1. Burn thousands of tokens re-feeding it the entire chat transcript.
+2. Watch it hallucinate because it forgot its original constraints.
+3. **Worst of all:** If *you* (the human) manually edit code while the AI is asleep, the AI wakes up totally oblivious to your changes, leading to massive merge conflicts and broken features.
+
+While tools like LangGraph save state, and Devin runs in expensive persistent cloud VMs, **neither actively diffs the AI's brain against the physical Git repository to catch human interference.**
+
+## The Solution
+
+**Wake** is a blazing-fast, local-first CLI middleware that acts as a referee between your AI agent's "brain" and the actual Git repository. 
+
+It safely anchors the AI's memory to the physical codebase using an event-sourced SQLite ledger. When a new AI session boots up, Wake diffs the repository against the AI's last memory and generates a tiny, 150-token **Recovery Packet** telling the AI exactly what it completed, what is blocked, and exactly which files the human modified while it was asleep.
+
+## Features
+
+- 🧠 **Local-First SQLite Engine**: Tracks task objectives, completed milestones, and blockers without uploading your repo to a cloud VM.
+- 🔗 **Git Drift Reconciliation**: Actively compares the AI's memory against Git. Automatically flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` states.
+- 🛑 **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
+- ⚡ **Multi-Agent Safe**: Built with SQLite WAL mode. Run 5 different AI agents in the same folder simultaneously without database locks.
+- 🔄 **Feature Pivot Support**: Did business requirements change? Run `wake objective "New Goal"` to safely pivot the AI's memory without a full reset.
+
+## Quickstart
+
+### Installation
+
+Ensure you have Go 1.27+ installed, then install Wake globally:
+
+```bash
+go install github.com/AshleyImmanuel/Wake@latest
+```
+
+### Basic Workflow
+
+Wake is designed to wrap *any* AI coding agent. 
+
+**1. Set the initial goal (or have your AI run this):**
+```bash
+wake checkpoint --objective "Migrate the database to PostgreSQL"
+```
+
+**2. Check the Status (The AI's brain vs Reality):**
+```bash
+wake status
+```
+*Output: `[STALE] Repository has 2 uncommitted changed file(s).`*
+
+**3. Wake the AI back up:**
+Feed this output directly to your new agent session:
+```bash
+wake resume
+```
+
+### Antigravity Integration (Hooks)
+
+If you are using the **Antigravity CLI**, Wake integrates natively. Simply copy the `hooks.json` file into your project's `.agents/` folder. Every time your AI writes a file, Wake will automatically save a checkpoint in the background.
+
+## Comparison to Existing Tools
+
+| Tool | Approach | Handles Human Code Interference? | Cost / Hosting |
+|------|----------|----------------------------------|----------------|
+| **Wake** | Local Git-Reconciliation & Event Ledger | **Yes (Catches STALE/CONFLICTs)** | Free / Local |
+| **Devin / Cloud Agents** | Persistent Cloud VMs | No (Assumes it owns the VM) | High / Cloud |
+| **LangGraph / Checkpointers** | Python State-Graph Storage | No (Unaffiliated with Git) | Free / Local |
+| **Cursor / Aider** | Repo Maps & Vector Search | No (Reads files, but forgets constraints) | Subscriptions |
+
+## Architecture
+
+Wake is built entirely in Go for maximum performance and cross-platform binary distribution. 
+- `internal/events/`: Defines the 17 core Event payloads (`TASK_STARTED`, `CONSTRAINT_ADDED`, etc).
+- `internal/state/`: The State Reducer that collapses the event log into a single Point-in-Time snapshot.
+- `internal/reconcile/`: The engine that diffs the SQLite Checkpoint against the live `git` status.
+
+## License
+MIT License. See [LICENSE](LICENSE) for more information.
