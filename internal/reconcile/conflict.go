@@ -1,8 +1,8 @@
 package reconcile
 
 import (
-	"github.com/AshleyImmanuel/Wake/internal/git"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/git"
+	"wake/internal/state"
 	"strings"
 )
 

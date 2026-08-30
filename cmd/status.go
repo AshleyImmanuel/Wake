@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AshleyImmanuel/Wake/internal/db"
-	"github.com/AshleyImmanuel/Wake/internal/git"
-	"github.com/AshleyImmanuel/Wake/internal/reconcile"
-	"github.com/AshleyImmanuel/Wake/internal/service"
+	"wake/internal/db"
+	"wake/internal/git"
+	"wake/internal/reconcile"
+	"wake/internal/service"
 	"github.com/spf13/cobra"
 )
 
@@ -142,11 +142,16 @@ var statusCmd = &cobra.Command{
 		switch result.Status {
 		case reconcile.StatusSafe:
 			fmt.Println("[SAFE] Working tree is fully synchronized with checkpoint. Safe to continue agent execution.")
-		case reconcile.StatusStale:
-			fmt.Println("[STALE] Repository has drifted without violating constraints. State refresh recommended.")
+		case reconcile.StatusHumanAhead:
+			fmt.Println("[HUMAN_AHEAD] Workspace has human edits since last checkpoint.")
+		case reconcile.StatusAIAhead:
+			fmt.Println("[AI_AHEAD] Workspace has AI edits since last checkpoint.")
+		case reconcile.StatusDiverged:
+			fmt.Println("[DIVERGED] Workspace has both Human and AI edits since last checkpoint.")
 		case reconcile.StatusConflict:
 			fmt.Println("[CONFLICT] Critical constraint violation or claim invalidation detected. Manual review required.")
 		}
+
 		fmt.Println("======================================================================")
 
 		return nil

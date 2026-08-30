@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AshleyImmanuel/Wake/internal/reconcile"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/reconcile"
+	"wake/internal/state"
 )
 
 // FormatResumePacket generates an ultra-minimal text block

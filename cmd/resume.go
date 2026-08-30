@@ -5,10 +5,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/AshleyImmanuel/Wake/internal/db"
-	"github.com/AshleyImmanuel/Wake/internal/git"
-	"github.com/AshleyImmanuel/Wake/internal/reconcile"
-	"github.com/AshleyImmanuel/Wake/internal/service"
+	"wake/internal/db"
+	"wake/internal/git"
+	"wake/internal/reconcile"
+	"wake/internal/service"
 	"github.com/spf13/cobra"
 )
 

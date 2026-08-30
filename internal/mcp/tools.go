@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AshleyImmanuel/Wake/internal/events"
-	"github.com/AshleyImmanuel/Wake/internal/service"
+	"wake/internal/events"
+	"wake/internal/service"
 )
 
 func getTools() []Tool {

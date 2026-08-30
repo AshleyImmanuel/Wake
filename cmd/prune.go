@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AshleyImmanuel/Wake/internal/db"
-	"github.com/AshleyImmanuel/Wake/internal/git"
+	"wake/internal/db"
+	"wake/internal/git"
 	"github.com/spf13/cobra"
 )
 

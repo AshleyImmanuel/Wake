@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AshleyImmanuel/Wake/internal/db"
-	"github.com/AshleyImmanuel/Wake/internal/events"
-	"github.com/AshleyImmanuel/Wake/internal/git"
-	"github.com/AshleyImmanuel/Wake/internal/service"
+	"wake/internal/db"
+	"wake/internal/events"
+	"wake/internal/git"
+	"wake/internal/service"
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/cobra"
 )

@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/AshleyImmanuel/Wake/internal/reconcile"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/reconcile"
+	"wake/internal/state"
 )
 
 type CheckpointRequest struct {

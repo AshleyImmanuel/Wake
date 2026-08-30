@@ -8,7 +8,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/AshleyImmanuel/Wake/internal/service"
+	"wake/internal/service"
 )
 
 type Server struct {

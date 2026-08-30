@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AshleyImmanuel/Wake/internal/events"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/events"
+	"wake/internal/state"
 	"github.com/google/uuid"
 )
 

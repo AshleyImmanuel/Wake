@@ -1,4 +1,4 @@
-module github.com/AshleyImmanuel/Wake
+module wake
 
 go 1.25.0
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/AshleyImmanuel/Wake/internal/updater"
+	"wake/internal/updater"
 	"github.com/spf13/cobra"
 )
 

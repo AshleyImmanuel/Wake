@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AshleyImmanuel/Wake/internal/git"
+	"wake/internal/git"
 )
 
 var ErrUnreviewedChanges = errors.New("unreviewed human modifications detected in working tree")

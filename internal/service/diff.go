@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AshleyImmanuel/Wake/internal/db"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/db"
+	"wake/internal/state"
 )
 
 // DiffCheckpoints computes the delta between two checkpoints.

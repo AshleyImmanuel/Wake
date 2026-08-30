@@ -1,9 +1,7 @@
 package state
 
 import (
-	"strings"
-
-	"github.com/AshleyImmanuel/Wake/internal/events"
+	"wake/internal/events"
 	"github.com/google/uuid"
 )
 
@@ -40,239 +38,39 @@ func Reduce(taskID string, history []events.Event) State {
 
 		switch e.Type {
 		case events.TaskStarted:
-			if obj := getString(payload, "objective", "description"); obj != "" {
-				currentState.Objective = obj
-			}
-			if currentState.TaskID == uuid.Nil {
-				if tidStr := getString(payload, "task_id", "id"); tidStr != "" {
-					if parsed, err := uuid.Parse(tidStr); err == nil {
-						currentState.TaskID = parsed
-					}
-				}
-			}
-			if tasks := getStringSlice(payload, "tasks", "remaining", "initial_tasks"); len(tasks) > 0 {
-				for _, t := range tasks {
-					if !containsString(currentState.Remaining, t) {
-						currentState.Remaining = append(currentState.Remaining, t)
-					}
-				}
-			}
-			if curr := getString(payload, "current"); curr != "" {
-				currentState.Current = curr
-			}
-
+			handleTaskStarted(&currentState, payload)
 		case events.RequirementAdded:
-			if req := getString(payload, "requirement", "description", "name"); req != "" {
-				if !containsString(currentState.Remaining, req) {
-					currentState.Remaining = append(currentState.Remaining, req)
-				}
-			}
-
+			handleRequirementAdded(&currentState, payload)
 		case events.ConstraintAdded:
-			if constraint := getString(payload, "constraint", "description", "pattern"); constraint != "" {
-				if !containsString(currentState.Constraints, constraint) {
-					currentState.Constraints = append(currentState.Constraints, constraint)
-				}
-			}
-
+			handleConstraintAdded(&currentState, payload)
 		case events.UserApproval:
-			decisionID := getString(payload, "id", "decision_id")
-			if decisionID != "" {
-				for i, d := range currentState.Decisions {
-					if d.ID == decisionID {
-						currentState.Decisions[i].Status = "ACTIVE"
-					}
-				}
-			}
-			if next := getString(payload, "next_action"); next != "" {
-				currentState.NextAction = next
-			}
-
+			handleUserApproval(&currentState, payload)
 		case events.UserRejection:
-			decisionID := getString(payload, "id", "decision_id")
-			if decisionID != "" {
-				for i, d := range currentState.Decisions {
-					if d.ID == decisionID {
-						currentState.Decisions[i].Status = "REJECTED"
-					}
-				}
-			}
-			reason := getString(payload, "reason", "description")
-			if reason != "" {
-				currentState.NextAction = "Address rejection: " + reason
-			}
-			if dnr := getString(payload, "do_not_repeat", "file", "path"); dnr != "" {
-				if !containsString(currentState.DoNotRepeat, dnr) {
-					currentState.DoNotRepeat = append(currentState.DoNotRepeat, dnr)
-				}
-			}
-			for _, dnr := range getStringSlice(payload, "do_not_repeat") {
-				if !containsString(currentState.DoNotRepeat, dnr) {
-					currentState.DoNotRepeat = append(currentState.DoNotRepeat, dnr)
-				}
-			}
-
+			handleUserRejection(&currentState, payload)
 		case events.DecisionMade:
-			if desc := getString(payload, "description"); desc != "" {
-				id := getString(payload, "id")
-				source := getString(payload, "source")
-				status := getString(payload, "status")
-				if status == "" {
-					status = "ACTIVE"
-				}
-				// Upsert decision
-				found := false
-				for i, d := range currentState.Decisions {
-					if id != "" && d.ID == id {
-						currentState.Decisions[i] = Decision{
-							ID:          id,
-							Description: desc,
-							Source:      source,
-							Status:      status,
-						}
-						found = true
-						break
-					}
-				}
-				if !found {
-					currentState.Decisions = append(currentState.Decisions, Decision{
-						ID:          id,
-						Description: desc,
-						Source:      source,
-						Status:      status,
-					})
-				}
-			}
-
+			handleDecisionMade(&currentState, payload)
 		case events.FileChanged:
-			filePath := getString(payload, "path", "file")
-			action := getString(payload, "action")
-			if filePath != "" {
-				currentState.Current = "Editing " + filePath
-				currentState.LastKnownAction = "Modified " + filePath
-				if action == "do_not_repeat" {
-					if !containsString(currentState.DoNotRepeat, filePath) {
-						currentState.DoNotRepeat = append(currentState.DoNotRepeat, filePath)
-					}
-				}
-			}
-
+			handleFileChanged(&currentState, payload)
 		case events.CommandExecuted:
-			cmd := getString(payload, "command")
-			if cmd != "" {
-				currentState.Current = "Executed: " + cmd
-				currentState.LastKnownAction = "Executed command"
-				currentState.LastCommand = cmd
-				if exitCode, ok := getInt(payload, "exit_code"); ok {
-					if exitCode == 0 {
-						currentState.LastCommandResult = "SUCCESS"
-					} else {
-						currentState.LastCommandResult = "FAILED"
-					}
-				} else {
-					currentState.LastCommandResult = "EXECUTED"
-				}
-			}
-			if next := getString(payload, "next_action"); next != "" {
-				currentState.NextAction = next
-			} else if exitCode, ok := getInt(payload, "exit_code"); ok && exitCode != 0 && cmd != "" {
-				currentState.NextAction = "Investigate failed command: " + cmd
-			}
-
+			handleCommandExecuted(&currentState, payload)
 		case events.TestStarted:
-			suite := getString(payload, "suite", "test")
-			if suite != "" {
-				currentState.Current = "Running tests: " + suite
-				currentState.LastKnownAction = "Ran tests"
-				currentState.LastCommand = "Test suite: " + suite
-				currentState.LastCommandResult = "PENDING"
-			}
-
+			handleTestStarted(&currentState, payload)
 		case events.TestPassed:
-			suite := getString(payload, "suite", "test")
-			if suite != "" {
-				currentState.Current = "Tests passed: " + suite
-				currentState.LastKnownAction = "Passed tests"
-				currentState.LastCommand = "Test suite: " + suite
-				currentState.LastCommandResult = "PASSED"
-			}
-			if next := getString(payload, "next_action"); next != "" {
-				currentState.NextAction = next
-			}
-
+			handleTestPassed(&currentState, payload)
 		case events.TestFailed:
-			suite := getString(payload, "suite", "test")
-			if suite != "" {
-				currentState.Current = "Test failed: " + suite
-				currentState.NextAction = "Fix failing tests: " + suite
-				currentState.LastKnownAction = "Failed tests"
-				currentState.LastCommand = "Test suite: " + suite
-				currentState.LastCommandResult = "FAILED"
-			}
-			if errStr := getString(payload, "error"); errStr != "" {
-				currentState.NextAction = "Fix failing test: " + errStr
-				if currentState.LastCommandResult == "FAILED" {
-					currentState.LastCommandResult = "FAILED: " + errStr
-				}
-			}
-
+			handleTestFailed(&currentState, payload)
 		case events.BlockerCreated:
-			if desc := getString(payload, "description"); desc != "" {
-				id := getString(payload, "id")
-				found := false
-				for i, b := range currentState.Blocked {
-					if id != "" && b.ID == id {
-						currentState.Blocked[i].Description = desc
-						currentState.Blocked[i].Status = "ACTIVE"
-						found = true
-						break
-					}
-				}
-				if !found {
-					currentState.Blocked = append(currentState.Blocked, Blocker{
-						ID:          id,
-						Description: desc,
-						Status:      "ACTIVE",
-					})
-				}
-				currentState.NextAction = "Resolve blocker: " + desc
-			}
-
+			handleBlockerCreated(&currentState, payload)
 		case events.BlockerResolved:
-			if id := getString(payload, "id"); id != "" {
-				for i, b := range currentState.Blocked {
-					if b.ID == id {
-						currentState.Blocked[i].Status = "RESOLVED"
-					}
-				}
-			}
-
+			handleBlockerResolved(&currentState, payload)
 		case events.MilestoneCompleted:
-			if milestone := getString(payload, "milestone", "name"); milestone != "" {
-				if !containsString(currentState.Completed, milestone) {
-					currentState.Completed = append(currentState.Completed, milestone)
-				}
-				// Remove from Remaining if present
-				currentState.Remaining = removeString(currentState.Remaining, milestone)
-				currentState.Current = "Completed milestone: " + milestone
-			}
-
+			handleMilestoneCompleted(&currentState, payload)
 		case events.GitCommit:
-			if hash := getString(payload, "hash", "commit"); hash != "" {
-				currentState.LastVerified = hash
-			}
-
+			handleGitCommit(&currentState, payload)
 		case events.SessionInterrupted:
-			reason := getString(payload, "reason")
-			if reason != "" {
-				currentState.Current = "Session interrupted: " + reason
-			} else {
-				currentState.Current = "Session interrupted"
-			}
-			currentState.NextAction = "Resume interrupted session"
-
+			handleSessionInterrupted(&currentState, payload)
 		case events.SessionResumed:
-			currentState.Current = "Session resumed"
+			handleSessionResumed(&currentState)
 		}
 	}
 
@@ -343,75 +141,4 @@ func calculateConfidence(blocked []Blocker, history []events.Event) ConfidenceLe
 
 	// Tier 3: High (Clean, verified, 0 active blockers)
 	return ConfidenceHigh
-}
-
-// Safe payload extraction helpers
-
-func getString(m map[string]interface{}, keys ...string) string {
-	for _, k := range keys {
-		if val, ok := m[k]; ok && val != nil {
-			if s, ok := val.(string); ok {
-				trimmed := strings.TrimSpace(s)
-				if trimmed != "" {
-					return trimmed
-				}
-			}
-		}
-	}
-	return ""
-}
-
-func getStringSlice(m map[string]interface{}, keys ...string) []string {
-	for _, k := range keys {
-		if val, ok := m[k]; ok && val != nil {
-			if slice, ok := val.([]string); ok {
-				return slice
-			}
-			if slice, ok := val.([]interface{}); ok {
-				res := make([]string, 0, len(slice))
-				for _, item := range slice {
-					if s, ok := item.(string); ok && strings.TrimSpace(s) != "" {
-						res = append(res, strings.TrimSpace(s))
-					}
-				}
-				return res
-			}
-		}
-	}
-	return nil
-}
-
-func getInt(m map[string]interface{}, keys ...string) (int, bool) {
-	for _, k := range keys {
-		if val, ok := m[k]; ok && val != nil {
-			switch v := val.(type) {
-			case int:
-				return v, true
-			case int64:
-				return int(v), true
-			case float64:
-				return int(v), true
-			}
-		}
-	}
-	return 0, false
-}
-
-func containsString(slice []string, target string) bool {
-	for _, s := range slice {
-		if s == target {
-			return true
-		}
-	}
-	return false
-}
-
-func removeString(slice []string, target string) []string {
-	res := make([]string, 0, len(slice))
-	for _, s := range slice {
-		if s != target {
-			res = append(res, s)
-		}
-	}
-	return res
 }

@@ -1,14 +1,16 @@
 package reconcile
 
-import "github.com/AshleyImmanuel/Wake/internal/state"
+import "wake/internal/state"
 
 // ReconciliationStatus represents the outcome of comparing a state checkpoint against live repository state.
 type ReconciliationStatus string
 
 const (
-	StatusSafe     ReconciliationStatus = "SAFE"
-	StatusStale    ReconciliationStatus = "STALE"
-	StatusConflict ReconciliationStatus = "CONFLICT"
+	StatusSafe       ReconciliationStatus = "SAFE"
+	StatusConflict   ReconciliationStatus = "CONFLICT"
+	StatusHumanAhead ReconciliationStatus = "HUMAN_AHEAD"
+	StatusAIAhead    ReconciliationStatus = "AI_AHEAD"
+	StatusDiverged   ReconciliationStatus = "DIVERGED"
 )
 
 // ReconciliationResult holds the complete evaluation result of a reconciliation run.

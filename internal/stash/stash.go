@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AshleyImmanuel/Wake/internal/git"
+	"wake/internal/git"
 )
 
 type Engine struct {

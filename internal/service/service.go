@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AshleyImmanuel/Wake/internal/db"
-	"github.com/AshleyImmanuel/Wake/internal/events"
-	"github.com/AshleyImmanuel/Wake/internal/git"
-	"github.com/AshleyImmanuel/Wake/internal/guard"
-	"github.com/AshleyImmanuel/Wake/internal/reconcile"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/db"
+	"wake/internal/events"
+	"wake/internal/git"
+	"wake/internal/guard"
+	"wake/internal/reconcile"
+	"wake/internal/state"
 	"github.com/google/uuid"
 )
 

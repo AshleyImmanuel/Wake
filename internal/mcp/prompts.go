@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AshleyImmanuel/Wake/internal/service"
+	"wake/internal/service"
 )
 
 func getPrompts() []Prompt {

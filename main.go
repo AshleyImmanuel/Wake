@@ -1,6 +1,6 @@
 package main
 
-import "github.com/AshleyImmanuel/Wake/cmd"
+import "wake/cmd"
 
 func main() {
 	cmd.Execute()

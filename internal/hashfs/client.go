@@ -10,7 +10,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/AshleyImmanuel/Wake/internal/git"
+	"wake/internal/git"
 )
 
 // Client provides a Git-less file hashing fallback for environments

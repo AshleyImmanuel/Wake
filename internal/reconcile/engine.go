@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/AshleyImmanuel/Wake/internal/git"
-	"github.com/AshleyImmanuel/Wake/internal/state"
+	"wake/internal/git"
+	"wake/internal/state"
 )
 
 // Engine evaluates a Checkpoint against live Git repository state.
@@ -258,9 +258,10 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 		return result
 	}
 
-	// 7. STALE EVALUATION:
+	// 7. DRIFT EVALUATION:
 	// If not CONFLICT and not SAFE, state has drifted
-	result.Status = StatusStale
+	driftStatus, driftReason := determineDriftStatus(repo.RootPath, result.ChangedFiles, cp.Timestamp)
+	result.Status = driftStatus
 	result.ConfidenceLevel = state.ConfidenceLow
 
 	if !result.BranchMatch {
@@ -274,9 +275,9 @@ func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string
 	} else if cp.Commit != repo.CommitHash {
 		result.Reason = fmt.Sprintf("Repository commit '%s' differs from checkpoint commit '%s'", repo.CommitHash, cp.Commit)
 	} else if len(result.ChangedFiles) > 0 {
-		result.Reason = fmt.Sprintf("Repository has %d uncommitted changed file(s)", len(result.ChangedFiles))
+		result.Reason = driftReason
 	} else {
-		result.Reason = "Repository state has drifted from checkpoint"
+		result.Reason = driftReason
 	}
 
 	return result
@@ -444,11 +445,12 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 
 		result.InvalidatedClaims = finalInvalidations
 
-		// If we dropped all invalidations, downgrade the CONFLICT to STALE
+		// If we dropped all invalidations, downgrade the CONFLICT to drift status
 		if len(result.InvalidatedClaims) == 0 && len(result.ConstraintViolations) == 0 && result.Status == StatusConflict {
-			result.Status = StatusStale
+			driftStatus, driftReason := determineDriftStatus(repoPath, result.ChangedFiles, cp.Timestamp)
+			result.Status = driftStatus
 			result.ConfidenceLevel = state.ConfidenceLow
-			result.Reason = "Workspace has locally modified file(s) (semantic checks passed)"
+			result.Reason = fmt.Sprintf("%s (semantic checks passed)", driftReason)
 		}
 	}
 
