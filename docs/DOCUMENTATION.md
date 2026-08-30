@@ -53,8 +53,10 @@ When you run a command, Wake takes the hundreds of raw events in the ledger and 
 ### The Reconciliation Engine
 This is the heart of Wake. Before the AI resumes, Wake compares the Point-in-Time State against the live Git repository. It outputs one of three states:
 1. `[SAFE]`: The repository exactly matches the AI's memory. Safe to resume.
-2. `[STALE]`: The repository has drifted (e.g., a human added a new file), but no AI constraints were violated. 
-3. `[CONFLICT]`: A human modified a file that the AI explicitly marked as "Do not touch", or deleted a file the AI needed. Manual review is required.
+2. `[HUMAN_AHEAD]`: A human has made uncommitted modifications to the repository while the AI was offline.
+3. `[AI_AHEAD]`: A secondary AI agent has made modifications to the repository.
+4. `[DIVERGED]`: Both human and AI modifications have occurred simultaneously.
+5. `[CONFLICT]`: A human modified a file that the AI explicitly marked as "Do not touch", or deleted a file the AI needed. Manual review is required.
 
 ---
 
@@ -67,8 +69,8 @@ Forces Wake to evaluate the current event ledger, bundle the current repository 
 
 ### `wake status`
 Evaluates the latest checkpoint against the current physical Git directory and outputs a Reconciliation Report.
-- **Usage:** `wake status`
-- **Output:** Returns `SAFE`, `STALE`, or `CONFLICT` with a list of modified files.
+- **Usage:** `wake status [--dir <path>]`
+- **Output:** Returns `SAFE`, `HUMAN_AHEAD`, `AI_AHEAD`, `DIVERGED`, or `CONFLICT` with a list of modified files.
 
 ### `wake resume`
 Generates the highly-condensed **Recovery Packet** designed to be fed directly into an AI agent's system prompt to wake it up.

@@ -65,7 +65,7 @@ It anchors the agent's memory to the local codebase using a highly performant, e
 ## Key Capabilities
 
 - **Multi-Agent Orchestration**: Operate multiple agents concurrently within the same workspace. Wake orchestrates state synchronization to prevent collision.
-- **Interference Resilience**: If human or secondary AI modifications occur while the primary agent is offline, Wake detects the drift. It flags `[SAFE]`, `[STALE]`, or `[CONFLICT]` verdicts to ensure the agent reconciles exact changes prior to execution.
+- **Interference Resilience**: If human or secondary AI modifications occur while the primary agent is offline, Wake detects the drift. It flags `[SAFE]`, `[HUMAN_AHEAD]`, `[AI_AHEAD]`, `[DIVERGED]`, or `[CONFLICT]` verdicts to ensure the agent reconciles exact changes prior to execution.
 - **Token-Efficient Context Recovery**: Rather than injecting extensive chat histories, Wake synthesizes a highly condensed ~150-token recovery packet.
 - **Git-Aware State Tracking**: Wake seamlessly anchors internal state to Git commit SHAs, branch tracking, and working tree indices. 
 - **Local-First SQLite Engine**: Tracks objectives and milestones locally utilizing WAL mode and serialized connection pooling for thread-safe concurrent access.
@@ -249,7 +249,7 @@ Example (Zed):
 |---------|-------------|
 | `wake init` | Initialize a `.wake/` workspace in the current directory |
 | `wake checkpoint` | Create a versioned state snapshot |
-| `wake status` | Show reconciliation status (SAFE/STALE/CONFLICT) |
+| `wake status` | Show reconciliation status (SAFE/HUMAN_AHEAD/AI_AHEAD/DIVERGED/CONFLICT) |
 | `wake resume` | Generate a compact ~150 token recovery packet for a new AI session |
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
@@ -308,11 +308,11 @@ Wake is built entirely in Go for cross-platform binary distribution.
 ```
 
 - `internal/events/`: 17 core Event types with deep cloning for thread safety
-- `internal/state/`: Deterministic reducer that collapses the event log into a point-in-time snapshot with dynamic confidence scoring
-- `internal/reconcile/`: Diffs the SQLite checkpoint against the file system to identify AI-interference. Stable and robust.
-- `internal/guard/`: Pre-checkpoint validation that blocks blind checkpoints on dirty working trees
+- `internal/state/`: Deterministic reducer that collapses the event log into a point-in-time snapshot with dynamic confidence scoring. Highly modularized into domain-specific event handlers (`handlers_actions.go`, `handlers_blockers.go`, etc.)
+- `internal/reconcile/`: Diffs the SQLite checkpoint against the file system to identify AI-interference. Includes `drift.go` for advanced AI vs Human author attribution.
+- `internal/guard/`: Pre-checkpoint validation that acts as a FATAL blocker on dirty working trees to prevent silent checkpoint corruption
 - `internal/service/`: Application facade that unifies all operations
-- `internal/db/`: SQLite persistence with transactional migrations and composite indices
+- `internal/db/`: SQLite persistence with transactional migrations and composite indices. Queries are split into logical domain files (`checkpoints.go`, `events.go`, `prune.go`) for massive scalability.
 
 ## Copyright & License
 
