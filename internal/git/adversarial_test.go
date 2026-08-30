@@ -199,8 +199,8 @@ func TestAdversarial_FilenamesWithSpacesAndUnicode(t *testing.T) {
 		"normal_deleted.txt",
 		"old name with space.txt",
 		"path with spaces/my file.txt",
-		"unicode_日本語_test.txt",
 		"unicode_üñîçødé_файл.md",
+		"unicode_日本語_test.txt",
 	}
 	if !reflect.DeepEqual(modified, expectedModified) {
 		t.Errorf("ExtractModifiedFiles mismatch:\nexpected: %v\ngot:      %v", expectedModified, modified)
