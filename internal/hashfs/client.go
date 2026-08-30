@@ -81,6 +81,12 @@ func (c *Client) GetStatus(ctx context.Context, repoPath string) (*git.StatusRes
 		return nil
 	})
 
+	for oldPath := range oldHashes {
+		if _, exists := newHashes[oldPath]; !exists {
+			modified = append(modified, oldPath)
+		}
+	}
+
 	// Save new index
 	if data, err := json.Marshal(newHashes); err == nil {
 		os.MkdirAll(filepath.Dir(indexPath), 0700)
