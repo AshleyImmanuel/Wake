@@ -1,8 +1,9 @@
 const os = require('os');
-const { execSync } = require('child_process');
+const { execSync, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const crypto = require('crypto');
 
 const version = "1.2.0"; // Should match package.json version
 
@@ -57,15 +58,42 @@ function download(url, dest) {
 async function install() {
     try {
         await download(url, dest);
-        console.log("Download complete. Extracting...");
+        console.log("Download complete. Verifying checksum...");
+        
+        const checksumUrl = `https://github.com/Wake-Engine/Wake/releases/download/v${version}/checksums.txt`;
+        const checksumDest = path.join(__dirname, 'checksums.txt');
+        await download(checksumUrl, checksumDest);
+        
+        const checksums = fs.readFileSync(checksumDest, 'utf8');
+        let expectedHash = '';
+        for (const line of checksums.split('\n')) {
+            if (line.includes(filename)) {
+                expectedHash = line.split(/\s+/)[0];
+                break;
+            }
+        }
+        if (!expectedHash) {
+            throw new Error(`Checksum for ${filename} not found in checksums.txt`);
+        }
+        
+        const fileBuffer = fs.readFileSync(dest);
+        const hashSum = crypto.createHash('sha256');
+        hashSum.update(fileBuffer);
+        const actualHash = hashSum.digest('hex');
+        
+        if (actualHash !== expectedHash) {
+            throw new Error(`Checksum verification failed! Expected ${expectedHash}, got ${actualHash}`);
+        }
+        console.log("Checksum verified successfully. Extracting...");
+        fs.unlinkSync(checksumDest);
         
         const installDir = __dirname;
         const binName = osName === 'Windows' ? 'wake.exe' : 'wake';
         
         if (osName === 'Windows') {
-            execSync(`tar -xf "${dest}"`, { cwd: installDir, stdio: 'inherit' });
+            execFileSync('tar', ['-xf', dest], { cwd: installDir, stdio: 'inherit' });
         } else {
-            execSync(`tar -xzf "${dest}"`, { cwd: installDir, stdio: 'inherit' });
+            execFileSync('tar', ['-xzf', dest], { cwd: installDir, stdio: 'inherit' });
         }
         
         // GoReleaser may place the binary at the root of the archive.
@@ -84,7 +112,7 @@ async function install() {
         }
         
         if (!osName.startsWith('Windows')) {
-            execSync(`chmod +x "${binPath}"`, { stdio: 'inherit' });
+            execFileSync('chmod', ['+x', binPath], { stdio: 'inherit' });
         }
         
         // Clean up archive
@@ -96,7 +124,7 @@ async function install() {
         try {
             // npm sets INIT_CWD to the original working directory where the user ran npm install
             const targetDir = process.env.INIT_CWD || process.cwd();
-            execSync(`"${binPath}" setup`, { cwd: targetDir, stdio: 'inherit' });
+            execFileSync(binPath, ['setup'], { cwd: targetDir, stdio: 'inherit' });
             console.log(`\nAuto-setup complete in ${targetDir}`);
         } catch (setupErr) {
             console.warn('\nWarning: Auto-setup failed. You may need to run "wake setup" manually in your project directory.');

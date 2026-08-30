@@ -59,6 +59,10 @@ func (c *Client) GetStatus(ctx context.Context, repoPath string) (*git.StatusRes
 			return nil
 		}
 
+		if d.Type()&os.ModeSymlink != 0 {
+			return nil // skip symlinks
+		}
+
 		rel, err := filepath.Rel(repoPath, path)
 		if err != nil {
 			return nil

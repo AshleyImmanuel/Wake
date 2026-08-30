@@ -24,3 +24,7 @@ PROJECT.md
 Project Wake.md
 sentinel.exe
 security_risk.md
+
+# MCP Configs
+claude_desktop_config.json
+zed_mcp_config.json

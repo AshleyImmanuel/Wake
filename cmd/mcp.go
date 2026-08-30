@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+	"sync/atomic"
 	"wake/internal/db"
 	"wake/internal/git"
 	"wake/internal/hashfs"
@@ -43,6 +44,11 @@ var mcpCmd = &cobra.Command{
 
 		server := mcp.NewServer(svc, workDir)
 
+		var lastManualCheckpoint atomic.Int64
+		server.OnCheckpoint = func() {
+			lastManualCheckpoint.Store(time.Now().UnixNano())
+		}
+
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 		go func() {
@@ -72,6 +78,13 @@ var mcpCmd = &cobra.Command{
 					if currentModTime.After(lastCheckpointModTime) {
 						// Check if stable (debounce)
 						time.Sleep(3 * time.Second)
+
+						// Skip auto-checkpoint if a manual checkpoint was created during debounce
+						if time.Now().UnixNano()-lastManualCheckpoint.Load() < int64(5*time.Second) {
+							lastCheckpointModTime = getModifiedFilesMaxTime(ctx, gitClient, repoRoot)
+							continue
+						}
+
 						if getModifiedFilesMaxTime(ctx, gitClient, repoRoot).Equal(currentModTime) {
 							svc.CreateCheckpoint(ctx, service.CheckpointRequest{
 								Objective: "Auto-checkpoint by Wake MCP Daemon",

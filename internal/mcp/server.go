@@ -6,15 +6,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
+	"time"
 
 	"wake/internal/service"
 )
 
 type Server struct {
-	svc     service.TaskService
-	workDir string
-	mu      sync.Mutex
+	svc      service.TaskService
+	workDir  string
+	mu       sync.Mutex
+	lastReq      time.Time
+	reqCount     int
+	OnCheckpoint func()
 }
 
 func NewServer(svc service.TaskService, workDir string) *Server {
@@ -28,9 +33,9 @@ func (s *Server) Serve(ctx context.Context, reader io.Reader, writer io.Writer) 
 	scanner := bufio.NewScanner(reader)
 	out := json.NewEncoder(writer)
 
-	// In Go, bufio.Scanner can handle up to 64KB by default. Let's increase it just in case.
+	// Limit max message size to 1MB
 	buf := make([]byte, 1024*1024)
-	scanner.Buffer(buf, 10*1024*1024)
+	scanner.Buffer(buf, 1024*1024)
 
 	for {
 		select {
@@ -53,6 +58,13 @@ func (s *Server) Serve(ctx context.Context, reader io.Reader, writer io.Writer) 
 			s.sendError(out, nil, -32700, "Parse error")
 			continue
 		}
+
+		s.mu.Lock()
+		if time.Since(s.lastReq) < 10*time.Millisecond {
+			time.Sleep(10 * time.Millisecond)
+		}
+		s.lastReq = time.Now()
+		s.mu.Unlock()
 
 		s.handleRequest(ctx, out, req)
 	}
@@ -95,7 +107,10 @@ func (s *Server) handleRequest(ctx context.Context, out *json.Encoder, req JSONR
 		var params InitializeParams
 		if err := json.Unmarshal(req.Params, &params); err == nil {
 			if params.ClientInfo.Name != "" {
-				s.svc.SetAuthor(params.ClientInfo.Name)
+				author := strings.ReplaceAll(params.ClientInfo.Name, "\n", "")
+				author = strings.ReplaceAll(author, "\r", "")
+				author = strings.ReplaceAll(author, "|", "")
+				s.svc.SetAuthor(author)
 			}
 		}
 
@@ -171,7 +186,7 @@ func (s *Server) handleRequest(ctx context.Context, out *json.Encoder, req JSONR
 		s.sendResult(out, req.ID, res)
 	default:
 		if req.ID != nil {
-			s.sendError(out, req.ID, -32601, fmt.Sprintf("Method not found: %s", req.Method))
+			s.sendError(out, req.ID, -32601, "Method not found")
 		}
 	}
 }

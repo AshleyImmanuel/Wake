@@ -325,6 +325,9 @@ func (c *client) GetFileAtCommit(ctx context.Context, repoPath, filePath, commit
 	if commitHash == "" {
 		return "", errors.New("commitHash cannot be empty")
 	}
+	if filePath == "" || strings.HasPrefix(filePath, "-") {
+		return "", errors.New("invalid filePath")
+	}
 	stdout, _, err := c.runner.Run(ctx, repoPath, "show", commitHash+":"+filePath)
 	if err != nil {
 		return "", err

@@ -24,6 +24,10 @@ func ScanDirectory(root string) (map[string]string, error) {
 
 		rel = strings.ReplaceAll(rel, "\\", "/")
 
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil // Skip symlinks
+		}
+
 		if info.IsDir() {
 			if rel == ".git" || rel == ".wake" || strings.HasPrefix(rel, ".git/") || strings.HasPrefix(rel, ".wake/") {
 				return filepath.SkipDir

@@ -207,12 +207,23 @@ func GetCheckpointByVersion(ctx context.Context, db *sql.DB, taskID string, vers
 		return nil, err
 	}
 
+	if checksumStr == "" {
+		fmt.Fprintf(os.Stderr, "warning: legacy checkpoint %s found without checksum\n", idStr)
+	} else {
+		expected := generateCheckpointChecksum(idStr, taskIDStr, sessionIDStr, cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch, cp.Author)
+		if checksumStr != expected {
+			return nil, fmt.Errorf("state poisoning detected: checkpoint %s checksum mismatch", idStr)
+		}
+	}
+
 	cp.ID, _ = uuid.Parse(idStr)
 	cp.TaskID, _ = uuid.Parse(taskIDStr)
 	cp.SessionID, _ = uuid.Parse(sessionIDStr)
 
 	if stateDataStr != "" {
-		_ = json.Unmarshal([]byte(stateDataStr), &cp.StateData)
+		if err := json.Unmarshal([]byte(stateDataStr), &cp.StateData); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal state data: %w", err)
+		}
 	}
 
 	return &cp, nil
@@ -257,12 +268,23 @@ func GetRecentCheckpoints(ctx context.Context, db *sql.DB, taskID string, limit 
 			return nil, err
 		}
 
+		if checksumStr == "" {
+			fmt.Fprintf(os.Stderr, "warning: legacy checkpoint %s found without checksum\n", idStr)
+		} else {
+			expected := generateCheckpointChecksum(idStr, taskIDStr, sessionIDStr, cp.Timestamp, cp.Commit, stateDataStr, cp.Repository, cp.Branch, cp.Author)
+			if checksumStr != expected {
+				return nil, fmt.Errorf("state poisoning detected: checkpoint %s checksum mismatch", idStr)
+			}
+		}
+
 		cp.ID, _ = uuid.Parse(idStr)
 		cp.TaskID, _ = uuid.Parse(taskIDStr)
 		cp.SessionID, _ = uuid.Parse(sessionIDStr)
 
 		if stateDataStr != "" {
-			_ = json.Unmarshal([]byte(stateDataStr), &cp.StateData)
+			if err := json.Unmarshal([]byte(stateDataStr), &cp.StateData); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal state data: %w", err)
+			}
 		}
 		result = append(result, cp)
 	}

@@ -163,10 +163,12 @@ Supported IDEs: Cursor, VS Code (Copilot), Windsurf, Kiro, Claude Desktop/Code, 
 
 		// --- Antigravity ---
 		if setupAntigravity {
-			if err := writeConfig(".agents", "mcp_config.json", b); err != nil {
+			globalPluginDir := filepath.Join(homeDir(), ".gemini", "config", "plugins", "wake-mcp-plugin")
+			
+			if err := writeConfig(globalPluginDir, "mcp_config.json", b); err != nil {
 				return err
 			}
-			fmt.Println("[OK] Generated .agents/mcp_config.json")
+			fmt.Println("[OK] Generated global mcp_config.json")
 
 			hooksConfig := map[string]interface{}{
 				"wake-autosave": map[string]interface{}{
@@ -207,10 +209,21 @@ Supported IDEs: Cursor, VS Code (Copilot), Windsurf, Kiro, Claude Desktop/Code, 
 				},
 			}
 			hb, _ := json.MarshalIndent(hooksConfig, "", "  ")
-			if err := writeConfig(".agents", "hooks.json", hb); err != nil {
+			if err := writeConfig(globalPluginDir, "hooks.json", hb); err != nil {
 				return err
 			}
-			fmt.Println("[OK] Generated .agents/hooks.json")
+			fmt.Println("[OK] Generated global hooks.json")
+			
+			pluginData := []byte("{\n  \"name\": \"wake-mcp-plugin\",\n  \"description\": \"Wake State Recovery Engine integration\"\n}")
+			if err := writeConfig(globalPluginDir, "plugin.json", pluginData); err != nil {
+				return err
+			}
+			
+			skillData := []byte("---\nname: wake\ndescription: \"Wake: State Recovery Engine integration. Use to manage checkpoints, restore state, and resolve conflicts.\"\n---\n# Wake\nWake is an AI state recovery engine. You have access to MCP tools under the `wake` server (`wake_checkpoint`, `wake_status`, etc).\nWhen you begin a task in a workspace with a `.wake` directory, use `wake_status` to understand the state.")
+			if err := writeConfig(filepath.Join(globalPluginDir, "skills", "wake"), "SKILL.md", skillData); err != nil {
+				return err
+			}
+			fmt.Println("[OK] Generated global Wake SKILL.md")
 		}
 
 		return nil
@@ -238,6 +251,6 @@ func init() {
 	setupCmd.Flags().BoolVar(&setupKiro, "kiro", false, "Generate .kiro/settings/mcp.json")
 	setupCmd.Flags().BoolVar(&setupClaude, "claude", false, "Generate Claude Desktop/Code MCP configs")
 	setupCmd.Flags().BoolVar(&setupZed, "zed", false, "Generate Zed MCP config snippet")
-	setupCmd.Flags().BoolVar(&setupAntigravity, "antigravity", false, "Generate .agents/mcp_config.json and hooks.json")
+	setupCmd.Flags().BoolVar(&setupAntigravity, "antigravity", false, "Generate global Antigravity MCP configs and skills")
 	rootCmd.AddCommand(setupCmd)
 }

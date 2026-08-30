@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"wake/internal/events"
@@ -139,6 +140,9 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 		err = e
 		if err == nil {
 			result = fmt.Sprintf("Checkpoint created successfully.\nTask ID: %s\nState Version: %d", res.TaskID.String(), res.StateVersion)
+			if s.OnCheckpoint != nil {
+				s.OnCheckpoint()
+			}
 		}
 
 	case "wake_status":
@@ -242,6 +246,14 @@ func (s *Server) handleToolCall(ctx context.Context, name string, args map[strin
 		dir := getString("dir")
 		if dir == "" {
 			dir = s.workDir
+		}
+		absDir, err := filepath.Abs(dir)
+		if err != nil {
+			return nil, fmt.Errorf("invalid directory: %w", err)
+		}
+		absWork, _ := filepath.Abs(s.workDir)
+		if !strings.HasPrefix(absDir, absWork) {
+			return nil, fmt.Errorf("directory must be within workspace: %s", absWork)
 		}
 		err = s.svc.InitWorkspace(ctx, dir)
 		if err == nil {

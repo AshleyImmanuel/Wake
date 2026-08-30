@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -49,8 +50,8 @@ func (e *Engine) StashModifiedFiles(ctx context.Context) error {
 		}
 
 		absPath := filepath.Join(e.repoRoot, relPath)
-		fileInfo, err := os.Stat(absPath)
-		if err != nil || fileInfo.IsDir() {
+		fileInfo, err := os.Lstat(absPath)
+		if err != nil || fileInfo.IsDir() || fileInfo.Mode()&os.ModeSymlink != 0 {
 			continue
 		}
 
@@ -73,6 +74,51 @@ func (e *Engine) StashModifiedFiles(ctx context.Context) error {
 		}
 	}
 
+	_ = e.cleanupStash(stashDir)
+
+	return nil
+}
+
+func (e *Engine) cleanupStash(stashDir string) error {
+	const maxStashFiles = 50
+	const maxStashAge = 24 * time.Hour
+
+	entries, err := os.ReadDir(stashDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	var files []os.DirEntry
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			files = append(files, entry)
+		}
+	}
+
+	sort.Slice(files, func(i, j int) bool {
+		infoI, errI := files[i].Info()
+		infoJ, errJ := files[j].Info()
+		if errI != nil || errJ != nil {
+			return false
+		}
+		// Sort newest first
+		return infoI.ModTime().After(infoJ.ModTime())
+	})
+
+	for i, entry := range files {
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		
+		path := filepath.Join(stashDir, entry.Name())
+		if i >= maxStashFiles || time.Since(info.ModTime()) > maxStashAge {
+			_ = os.Remove(path)
+		}
+	}
 	return nil
 }
 
@@ -82,6 +128,14 @@ func hashFile(path string) (string, error) {
 		return "", err
 	}
 	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil {
+		return "", err
+	}
+	if info.Size() > 100*1024*1024 { // 100MB limit
+		return "", fmt.Errorf("file too large to hash: %d bytes", info.Size())
+	}
 
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
