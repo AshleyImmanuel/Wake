@@ -1,10 +1,10 @@
 {
-  "mcpServers": {
-    "wake": {
-      "args": [
-        "mcp"
-      ],
-      "command": "C:\\Users\\USER\\Desktop\\Wake\\wake.exe"
-    }
-  }
+    "mcpServers":  {
+                       "wake":  {
+                                    "args":  [
+                                                 "mcp"
+                                             ],
+                                    "command":  "C:/Users/USER/Desktop/Wake/wake.exe"
+                                }
+                   }
 }

@@ -23,8 +23,19 @@ func FormatResumePacket(packet *ResumePacket) string {
 
 	if len(cp.StateData.Completed) > 0 {
 		sb.WriteString("## Completed\n")
-		for _, c := range cp.StateData.Completed {
-			sb.WriteString(fmt.Sprintf("- %s\n", c))
+		
+		displayCount := 3
+		total := len(cp.StateData.Completed)
+		
+		if total > displayCount {
+			sb.WriteString(fmt.Sprintf("... +%d more\n", total-displayCount))
+			for i := total - displayCount; i < total; i++ {
+				sb.WriteString(fmt.Sprintf("- %s\n", cp.StateData.Completed[i]))
+			}
+		} else {
+			for _, c := range cp.StateData.Completed {
+				sb.WriteString(fmt.Sprintf("- %s\n", c))
+			}
 		}
 	}
 
