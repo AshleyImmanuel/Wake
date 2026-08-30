@@ -91,6 +91,11 @@ wake resume
 
 If you are using the **Antigravity CLI**, Wake integrates natively. Simply copy the `hooks.json` file into your project's `.agents/` folder. Every time your AI writes a file, Wake will automatically save a checkpoint in the background.
 
+## Roadmap (v1.1)
+
+- **Git-less File Hashing Engine:** Wake will soon decouple from Git entirely. For developers who don't use Git, Wake will automatically hash the local files via `SHA-256` in the background to detect human interference without requiring a single Git command.
+- **State Snapshotting:** O(1) performance improvements for long-running AI tasks.
+
 ## Synergy with Existing Tools
 
 Wake is built to **complement**, not replace, the incredible tools already pushing the industry forward:
