@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -38,6 +39,15 @@ var markCmd = &cobra.Command{
 			fmt.Println("{}")
 			return nil
 		}
+
+		// SANITIZE INPUTS to prevent Log Injection and Evasion vulnerabilities
+		targetFile = strings.ReplaceAll(targetFile, "\n", "")
+		targetFile = strings.ReplaceAll(targetFile, "\r", "")
+		targetFile = strings.ReplaceAll(targetFile, "|", "")
+		
+		markAuthor = strings.ReplaceAll(markAuthor, "\n", "")
+		markAuthor = strings.ReplaceAll(markAuthor, "\r", "")
+		markAuthor = strings.ReplaceAll(markAuthor, "|", "")
 
 		targetDir, err := os.Getwd()
 		if err != nil {

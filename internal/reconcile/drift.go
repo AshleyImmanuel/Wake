@@ -61,6 +61,10 @@ func determineDriftStatus(repoRoot string, changedFiles []string, checkpointTime
 			// The first line might be incomplete, save it for the next iteration
 			if cursor > 0 {
 				leftover = lines[0]
+				// OOM DOS GUARD: If a single line exceeds 64KB, it's malicious. Discard it.
+				if len(leftover) > 65536 {
+					leftover = ""
+				}
 				lines = lines[1:]
 			} else {
 				leftover = ""
