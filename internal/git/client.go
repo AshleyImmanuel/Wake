@@ -38,6 +38,9 @@ type Client interface {
 	// GetFileDiff returns textual diff for a specific file.
 	GetFileDiff(ctx context.Context, repoPath string, filePath string) (string, error)
 
+	// GetFileAtCommit returns the content of a file at a specific commit.
+	GetFileAtCommit(ctx context.Context, repoPath, filePath, commitHash string) (string, error)
+
 	// GetDiffBetween returns textual diff between two commit hashes.
 	GetDiffBetween(ctx context.Context, repoPath string, fromCommit, toCommit string) (string, error)
 
@@ -316,3 +319,16 @@ func (c *client) GetFileDiff(ctx context.Context, repoPath string, filePath stri
 	}
 	return string(stdout), nil
 }
+
+// GetFileAtCommit returns the content of a file at a specific commit.
+func (c *client) GetFileAtCommit(ctx context.Context, repoPath, filePath, commitHash string) (string, error) {
+	if commitHash == "" {
+		return "", errors.New("commitHash cannot be empty")
+	}
+	stdout, _, err := c.runner.Run(ctx, repoPath, "show", commitHash+":"+filePath)
+	if err != nil {
+		return "", err
+	}
+	return string(stdout), nil
+}
+
