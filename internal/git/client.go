@@ -4,8 +4,19 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
+
+var validGitRefRegex = regexp.MustCompile(`^[a-zA-Z0-9_\.\/\-]+$`)
+
+// isValidGitRef returns true if ref matches safe git reference format and does not start with a dash.
+func isValidGitRef(ref string) bool {
+	if ref == "" || strings.HasPrefix(ref, "-") {
+		return false
+	}
+	return validGitRefRegex.MatchString(ref)
+}
 
 // Client defines the high-level Git operations required by Sentinel.
 type Client interface {
@@ -178,9 +189,9 @@ func (c *client) GetState(ctx context.Context, repoPath string) (*RepositoryStat
 
 // GetDiff returns textual diff for staged or unstaged changes.
 func (c *client) GetDiff(ctx context.Context, repoPath string, staged bool) (string, error) {
-	args := []string{"diff"}
+	args := []string{"diff", "--"}
 	if staged {
-		args = []string{"diff", "--staged"}
+		args = []string{"diff", "--staged", "--"}
 	}
 	stdout, _, err := c.runner.Run(ctx, repoPath, args...)
 	if err != nil {
@@ -191,10 +202,15 @@ func (c *client) GetDiff(ctx context.Context, repoPath string, staged bool) (str
 
 // GetDiffBetween returns textual diff between two commit hashes.
 func (c *client) GetDiffBetween(ctx context.Context, repoPath string, fromCommit, toCommit string) (string, error) {
-	if strings.TrimSpace(fromCommit) == "" || strings.TrimSpace(toCommit) == "" {
+	fromCommit = strings.TrimSpace(fromCommit)
+	toCommit = strings.TrimSpace(toCommit)
+	if fromCommit == "" || toCommit == "" {
 		return "", errors.New("both fromCommit and toCommit must be specified")
 	}
-	stdout, _, err := c.runner.Run(ctx, repoPath, "diff", fromCommit, toCommit)
+	if !isValidGitRef(fromCommit) || !isValidGitRef(toCommit) {
+		return "", ErrInvalidCommit
+	}
+	stdout, _, err := c.runner.Run(ctx, repoPath, "diff", fromCommit, toCommit, "--")
 	if err != nil {
 		return "", err
 	}
@@ -205,11 +221,17 @@ func (c *client) GetDiffBetween(ctx context.Context, repoPath string, fromCommit
 func (c *client) GetChangedFilesBetween(ctx context.Context, repoPath string, fromCommit, toCommit string) ([]string, error) {
 	fromCommit = strings.TrimSpace(fromCommit)
 	toCommit = strings.TrimSpace(toCommit)
-	if fromCommit == "" || toCommit == "" || fromCommit == toCommit {
+	if fromCommit == "" || toCommit == "" {
+		return []string{}, nil
+	}
+	if !isValidGitRef(fromCommit) || !isValidGitRef(toCommit) {
+		return nil, ErrInvalidCommit
+	}
+	if fromCommit == toCommit {
 		return []string{}, nil
 	}
 
-	stdout, _, err := c.runner.Run(ctx, repoPath, "diff", "--name-only", fromCommit, toCommit)
+	stdout, _, err := c.runner.Run(ctx, repoPath, "diff", "--name-only", fromCommit, toCommit, "--")
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +250,7 @@ func (c *client) IsClean(ctx context.Context, repoPath string) (bool, error) {
 // CommitExists checks whether a specific commit hash exists in the local repository object database.
 func (c *client) CommitExists(ctx context.Context, repoPath string, commitHash string) (bool, error) {
 	commitHash = strings.TrimSpace(commitHash)
-	if commitHash == "" {
+	if commitHash == "" || !isValidGitRef(commitHash) {
 		return false, nil
 	}
 	_, _, err := c.runner.Run(ctx, repoPath, "cat-file", "-e", commitHash+"^{commit}")
@@ -244,6 +266,9 @@ func (c *client) IsAncestor(ctx context.Context, repoPath string, ancestorCommit
 	descendantCommit = strings.TrimSpace(descendantCommit)
 	if ancestorCommit == "" || descendantCommit == "" {
 		return false, nil
+	}
+	if !isValidGitRef(ancestorCommit) || !isValidGitRef(descendantCommit) {
+		return false, ErrInvalidCommit
 	}
 	if ancestorCommit == descendantCommit {
 		return true, nil

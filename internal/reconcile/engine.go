@@ -14,6 +14,24 @@ import (
 	"github.com/wake/wake/internal/state"
 )
 
+var (
+	versionRegex     = regexp.MustCompile(`^(?i)v?\d+(\.\d+)+([-_a-z0-9\.]*)?$`)
+	stepCounterRegex = regexp.MustCompile(`^(#?\d+(\.\d+)*\.?|\d+\.)$`)
+	urlPrefixRegex   = regexp.MustCompile(`^(?i)(https?|ftp|file|ws|wss|git)://`)
+	validExtRegex    = regexp.MustCompile(`^\.[a-zA-Z][a-zA-Z0-9_-]{0,9}$`)
+)
+
+var knownAbbreviations = map[string]bool{
+	"e.g.": true, "i.e.": true, "etc.": true, "ex.": true, "vs.": true, "al.": true,
+	"ref.": true, "fig.": true, "no.": true, "dr.": true, "mr.": true, "ms.": true,
+	"dept.": true, "approx.": true, "est.": true, "min.": true, "max.": true,
+}
+
+var knownStandaloneFiles = map[string]bool{
+	"makefile": true, "dockerfile": true, "readme": true, "license": true,
+	"procfile": true, "jenkinsfile": true, "gemfile": true, "rakefile": true,
+}
+
 // Engine evaluates a Checkpoint against live Git repository state.
 type Engine interface {
 	Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string) ReconciliationResult
@@ -265,7 +283,10 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 	if cp.Commit != "" && repoState.CommitHash != "" && cp.Commit != repoState.CommitHash {
 		// Check if cp.Commit exists in local repo
 		exists, err := gitClient.CommitExists(ctx, repoPath, cp.Commit)
-		if err == nil && !exists {
+		if err != nil {
+			return ReconciliationResult{}, fmt.Errorf("failed to verify checkpoint commit existence: %w", err)
+		}
+		if !exists {
 			res := Reconcile(cp, *repoState, taskFiles)
 			res.Status = StatusConflict
 			res.ConfidenceLevel = state.ConfidenceNone
@@ -275,7 +296,10 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 
 		// Check if cp.Commit is an ancestor of the current commit
 		isAncestor, err := gitClient.IsAncestor(ctx, repoPath, cp.Commit, repoState.CommitHash)
-		if err == nil && !isAncestor {
+		if err != nil {
+			return ReconciliationResult{}, fmt.Errorf("failed to verify git commit ancestry: %w", err)
+		}
+		if !isAncestor {
 			res := Reconcile(cp, *repoState, taskFiles)
 			res.Status = StatusConflict
 			res.ConfidenceLevel = state.ConfidenceNone
@@ -285,7 +309,10 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 
 		// Commit is an ancestor: retrieve changed files between checkpoint commit and current commit
 		changed, err := gitClient.GetChangedFilesBetween(ctx, repoPath, cp.Commit, repoState.CommitHash)
-		if err == nil && len(changed) > 0 {
+		if err != nil {
+			return ReconciliationResult{}, fmt.Errorf("failed to retrieve changed files between commits: %w", err)
+		}
+		if len(changed) > 0 {
 			commitChangedFiles = changed
 		}
 	}
@@ -304,22 +331,32 @@ func ReconcileRepo(ctx context.Context, cp state.Checkpoint, gitClient git.Clien
 	if root == "" {
 		root = repoPath
 	}
+	if root == "" {
+		root = "."
+	}
 
 	for _, claimed := range append(cp.StateData.Completed, cp.StateData.DoNotRepeat...) {
 		extractedPaths := extractCandidatePaths(claimed)
 		for _, p := range extractedPaths {
-			if looksLikeFilePath(p) {
-				fullPath := filepath.Join(root, filepath.FromSlash(p))
-				if _, statErr := os.Stat(fullPath); os.IsNotExist(statErr) {
-					msg := fmt.Sprintf("Claimed file '%s' does not exist on disk", p)
-					if !containsString(result.InvalidatedClaims, msg) {
-						result.InvalidatedClaims = append(result.InvalidatedClaims, msg)
-					}
-					result.Status = StatusConflict
-					result.ConfidenceLevel = state.ConfidenceNone
-					if result.Reason == "" || result.Reason == "Repository exactly matches checkpoint commit and working tree is clean" {
-						result.Reason = msg
-					}
+			cleanP := strings.TrimRight(p, ".,;:!?)")
+			if !looksLikeFilePath(cleanP) {
+				continue
+			}
+
+			fullPath, ok := resolveSafeRepoPath(root, cleanP)
+			if !ok {
+				continue
+			}
+
+			if _, statErr := os.Stat(fullPath); os.IsNotExist(statErr) {
+				msg := fmt.Sprintf("Claimed file '%s' does not exist on disk", cleanP)
+				if !containsString(result.InvalidatedClaims, msg) {
+					result.InvalidatedClaims = append(result.InvalidatedClaims, msg)
+				}
+				result.Status = StatusConflict
+				result.ConfidenceLevel = state.ConfidenceNone
+				if result.Reason == "" || result.Reason == "Repository exactly matches checkpoint commit and working tree is clean" {
+					result.Reason = msg
 				}
 			}
 		}
@@ -345,10 +382,16 @@ func normalizePath(p string) string {
 	return cleaned
 }
 
-// isInternalMetadataPath identifies Sentinel and Git internal working files.
+// isInternalMetadataPath identifies Wake, Sentinel, and Git internal working files.
 func isInternalMetadataPath(p string) bool {
 	p = normalizePath(p)
-	if strings.HasPrefix(p, ".wake/") || p == ".wake" || strings.HasPrefix(p, ".git/") || p == ".git" {
+	if p == "" {
+		return false
+	}
+	lower := strings.ToLower(p)
+	if strings.HasPrefix(lower, ".wake/") || lower == ".wake" ||
+		strings.HasPrefix(lower, ".sentinel/") || lower == ".sentinel" ||
+		strings.HasPrefix(lower, ".git/") || lower == ".git" {
 		return true
 	}
 	return false
@@ -388,14 +431,6 @@ func matchSinglePattern(pattern, filePath string) bool {
 		}
 		// Try matching base name (e.g. "*.sql" matches "schema/migration.sql")
 		if matched, err := path.Match(strings.ToLower(pattern), strings.ToLower(path.Base(filePath))); err == nil && matched {
-			return true
-		}
-	}
-
-	// 4. Path component match (e.g. directory segment "auth" matches "auth/session.go")
-	segments := strings.Split(filePath, "/")
-	for _, seg := range segments {
-		if strings.EqualFold(seg, pattern) {
 			return true
 		}
 	}
@@ -441,15 +476,22 @@ func matchesConstraint(filePath, constraint string) bool {
 	}
 
 	// Extract candidate tokens/paths from text
+	candidates := extractCandidatePaths(constraint)
+	for _, candidate := range candidates {
+		if matchSinglePattern(candidate, filePath) {
+			return true
+		}
+	}
+
+	// If no explicit candidate path matched, check if any non-stopword token matches the root directory segment
 	tokens := extractTokens(constraint)
+	firstSeg := strings.Split(normalizePath(filePath), "/")[0]
 	for _, token := range tokens {
 		if stopWords[strings.ToLower(token)] {
 			continue
 		}
-		if len(token) >= 2 {
-			if matchSinglePattern(token, filePath) {
-				return true
-			}
+		if strings.EqualFold(token, firstSeg) {
+			return true
 		}
 	}
 
@@ -519,18 +561,146 @@ func extractCandidatePaths(s string) []string {
 		if stopWords[strings.ToLower(t)] {
 			continue
 		}
-		if looksLikeFilePath(t) || len(t) >= 3 {
+		if looksLikeFilePath(t) || (strings.Contains(t, "/") && !strings.Contains(t, "://") && isSafeRelativePath(strings.ReplaceAll(t, "*", "x"))) {
 			candidates = append(candidates, t)
 		}
 	}
 	return candidates
 }
 
-// looksLikeFilePath checks if a string contains path separators, extensions, or globs.
+// isSafeRelativePath validates that a path string is strictly relative and contained,
+// rejecting path traversals (..), absolute paths, Windows drive letters, and UNC paths.
+func isSafeRelativePath(p string) bool {
+	p = strings.TrimSpace(p)
+	if p == "" || p == "." {
+		return false
+	}
+
+	// Reject UNC network paths (e.g. \\server\share or //server/share)
+	if strings.HasPrefix(p, `\\`) || strings.HasPrefix(p, "//") {
+		return false
+	}
+
+	// Reject Windows drive letter prefixes (e.g. C:\... or C:/...)
+	if filepath.VolumeName(p) != "" {
+		return false
+	}
+	if len(p) >= 2 && ((p[0] >= 'a' && p[0] <= 'z') || (p[0] >= 'A' && p[0] <= 'Z')) && p[1] == ':' {
+		return false
+	}
+
+	// Reject absolute paths
+	if filepath.IsAbs(p) || strings.HasPrefix(p, "/") || strings.HasPrefix(p, `\`) {
+		return false
+	}
+
+	// Reject directory traversal segments (..)
+	normalized := strings.ReplaceAll(p, "\\", "/")
+	segments := strings.Split(normalized, "/")
+	for _, seg := range segments {
+		if seg == ".." {
+			return false
+		}
+	}
+
+	return true
+}
+
+// resolveSafeRepoPath joins root and relative path p, verifying containment within root via filepath.Rel.
+func resolveSafeRepoPath(root, p string) (string, bool) {
+	if !isSafeRelativePath(p) {
+		return "", false
+	}
+
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", false
+	}
+	absRoot = filepath.Clean(absRoot)
+
+	fullPath := filepath.Clean(filepath.Join(absRoot, filepath.FromSlash(p)))
+
+	rel, err := filepath.Rel(absRoot, fullPath)
+	if err != nil {
+		return "", false
+	}
+
+	// Verify rel does not escape root (no ".." prefix and not absolute)
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		return "", false
+	}
+
+	return fullPath, true
+}
+
+// looksLikeFilePath determines if a token represents a plausible concrete file or directory path,
+// safely excluding wildcards (*, ?), URLs, version numbers, step counters, and abbreviations.
 func looksLikeFilePath(s string) bool {
-	if strings.ContainsAny(s, "/\\*.") {
+	s = strings.TrimSpace(s)
+	s = strings.Trim(s, "\"'`()[]{}<>")
+	s = strings.TrimRight(s, ".,;:!?")
+	if s == "" {
+		return false
+	}
+
+	// 1. Exclude wildcards and glob characters
+	if strings.ContainsAny(s, "*?[]{}") {
+		return false
+	}
+
+	// 2. Exclude URLs
+	if strings.Contains(s, "://") || urlPrefixRegex.MatchString(s) {
+		return false
+	}
+
+	// 3. Exclude known abbreviations
+	lower := strings.ToLower(s)
+	if knownAbbreviations[lower] || knownAbbreviations[lower+"."] {
+		return false
+	}
+
+	// 4. Exclude version numbers (e.g. v1.0.0, 2.1, v2.0)
+	if versionRegex.MatchString(s) {
+		return false
+	}
+
+	// 5. Exclude step counters and numeric labels (e.g. 1., 2.1, #1)
+	if stepCounterRegex.MatchString(s) {
+		return false
+	}
+
+	// 6. Exclude path traversal and unsafe path formats
+	if !isSafeRelativePath(s) {
+		return false
+	}
+
+	// 7. Positive match: Has valid file extension starting with a letter
+	ext := path.Ext(strings.ReplaceAll(s, "\\", "/"))
+	if ext != "" && validExtRegex.MatchString(ext) {
 		return true
 	}
+
+	// 8. Positive match: Contains directory separators with non-empty segments
+	normalized := strings.ReplaceAll(s, "\\", "/")
+	if strings.Contains(normalized, "/") {
+		parts := strings.Split(normalized, "/")
+		validParts := 0
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part != "" && part != "." && part != ".." {
+				validParts++
+			}
+		}
+		if validParts >= 2 {
+			return true
+		}
+	}
+
+	// 9. Positive match: Known standalone root filenames (Makefile, Dockerfile, etc.)
+	if knownStandaloneFiles[lower] {
+		return true
+	}
+
 	return false
 }
 

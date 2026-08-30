@@ -7,17 +7,20 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 	"github.com/wake/wake/internal/db"
 	"github.com/wake/wake/internal/events"
 	"github.com/wake/wake/internal/git"
+	"github.com/wake/wake/internal/guard"
 	"github.com/wake/wake/internal/state"
-	"github.com/spf13/cobra"
 )
 
 var (
-	checkpointTaskID    string
-	checkpointObjective string
-	checkpointDir       string
+	checkpointTaskID       string
+	checkpointObjective    string
+	checkpointDir          string
+	checkpointForce        bool
+	checkpointTrackedFiles []string
 )
 
 var checkpointCmd = &cobra.Command{
@@ -25,11 +28,16 @@ var checkpointCmd = &cobra.Command{
 	Short: "Create a versioned snapshot of the current task state",
 	Long:  "Captures the current Git repository state, reduces task events, and saves a versioned state checkpoint to SQLite.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return runCheckpoint(cmd.Context(), checkpointDir, checkpointTaskID, checkpointObjective)
+		return runCheckpointWithOpts(cmd.Context(), checkpointDir, checkpointTaskID, checkpointObjective, checkpointForce, checkpointTrackedFiles)
 	},
 }
 
+// runCheckpoint creates a checkpoint using default force=false and nil trackedFiles for backward compatibility.
 func runCheckpoint(ctx context.Context, targetDir, taskIDStr, objective string) error {
+	return runCheckpointWithOpts(ctx, targetDir, taskIDStr, objective, false, nil)
+}
+
+func runCheckpointWithOpts(ctx context.Context, targetDir, taskIDStr, objective string, force bool, trackedFiles []string) error {
 	if targetDir == "" {
 		var err error
 		targetDir, err = os.Getwd()
@@ -47,6 +55,16 @@ func runCheckpoint(ctx context.Context, targetDir, taskIDStr, objective string) 
 	repoState, err := gitClient.GetState(ctx, repoRoot)
 	if err != nil {
 		return fmt.Errorf("failed to inspect git repository state: %w", err)
+	}
+
+	// Pre-Checkpoint Guard: Enforce that no un-tracked or human-modified files are blindly scooped
+	guardOpts := guard.CheckpointGuardOptions{
+		Force:        force,
+		TrackedFiles: trackedFiles,
+		RepoRoot:     repoRoot,
+	}
+	if err := guard.ValidatePreCheckpoint(ctx, repoState, guardOpts); err != nil {
+		return fmt.Errorf("pre-checkpoint guard blocked checkpoint: %w", err)
 	}
 
 	database, err := db.InitDB(repoRoot)
@@ -139,5 +157,7 @@ func init() {
 	checkpointCmd.Flags().StringVar(&checkpointTaskID, "task-id", "", "Task UUID for the checkpoint")
 	checkpointCmd.Flags().StringVar(&checkpointObjective, "objective", "", "Task objective description")
 	checkpointCmd.Flags().StringVar(&checkpointDir, "dir", "", "Repository directory (defaults to current directory)")
+	checkpointCmd.Flags().BoolVarP(&checkpointForce, "force", "f", false, "Force checkpoint even if unreviewed changes exist")
+	checkpointCmd.Flags().StringSliceVar(&checkpointTrackedFiles, "tracked-files", nil, "Comma-separated list of files tracked by the current task")
 	rootCmd.AddCommand(checkpointCmd)
 }
