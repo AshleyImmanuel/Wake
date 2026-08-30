@@ -83,8 +83,8 @@ func (c *Client) GetStatus(ctx context.Context, repoPath string) (*git.StatusRes
 
 	// Save new index
 	if data, err := json.Marshal(newHashes); err == nil {
-		os.MkdirAll(filepath.Dir(indexPath), 0755)
-		os.WriteFile(indexPath, data, 0644)
+		os.MkdirAll(filepath.Dir(indexPath), 0700)
+		os.WriteFile(indexPath, data, 0600)
 	}
 
 	result := &git.StatusResult{

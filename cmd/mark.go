@@ -55,9 +55,9 @@ var markCmd = &cobra.Command{
 		}
 
 		logPath := filepath.Join(targetDir, ".wake", "attribution.log")
-		os.MkdirAll(filepath.Dir(logPath), 0755)
+		os.MkdirAll(filepath.Dir(logPath), 0700)
 
-		f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 		if err != nil {
 			return err
 		}
