@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/wake/wake/internal/db"
 	"github.com/wake/wake/internal/git"
@@ -113,7 +114,12 @@ func runResume(ctx context.Context, targetDir, taskIDStr string) error {
 		fmt.Println("No modifications since last checkpoint. Safe to resume from Next Action.")
 	} else {
 		fmt.Printf("Status: %s\n", result.Status)
-		if len(result.ChangedFiles) > 0 {
+		
+		if strings.Contains(result.Reason, "merge conflicts") {
+			fmt.Println("\nCRITICAL RECOVERY INSTRUCTION: The repository is in a broken Git merge state. You must resolve the merge conflicts using `git merge --continue` or `git rebase --continue` before you do any other work.")
+		} else if !result.BranchMatch {
+			fmt.Printf("\nCRITICAL RECOVERY INSTRUCTION: You are on branch '%s', but the checkpoint was saved on branch '%s'. You must run `git checkout %s` before continuing to avoid corrupting the state.\n", result.CurrentCommit, cp.Branch, cp.Branch)
+		} else if len(result.ChangedFiles) > 0 {
 			fmt.Println("The following files have changed since the AI paused:")
 			for _, f := range result.ChangedFiles {
 				fmt.Printf(" - %s\n", f)

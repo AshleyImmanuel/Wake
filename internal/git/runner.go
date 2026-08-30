@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"os/exec"
-	"strings"
-	"sync"
 )
 
 // Runner abstracts execution of Git CLI commands.
@@ -87,59 +85,4 @@ func (r *OSRunner) Run(ctx context.Context, dir string, args ...string) ([]byte,
 	return stdout, stderr, nil
 }
 
-// MockResponse represents a pre-configured response for a MockRunner call.
-type MockResponse struct {
-	Stdout []byte
-	Stderr []byte
-	Err    error
-}
 
-// MockRunner is an in-memory mock implementation of Runner for testing.
-type MockRunner struct {
-	mu        sync.Mutex
-	Calls     [][]string
-	Dirs      []string
-	Responses map[string]MockResponse
-	Handler   func(ctx context.Context, dir string, args ...string) ([]byte, []byte, error)
-}
-
-// NewMockRunner creates a new instance of MockRunner.
-func NewMockRunner() *MockRunner {
-	return &MockRunner{
-		Calls:     make([][]string, 0),
-		Dirs:      make([]string, 0),
-		Responses: make(map[string]MockResponse),
-	}
-}
-
-// Register registers a canned response for a given arguments key (e.g. "rev-parse HEAD").
-func (m *MockRunner) Register(argKey string, stdout, stderr string, err error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.Responses[argKey] = MockResponse{
-		Stdout: []byte(stdout),
-		Stderr: []byte(stderr),
-		Err:    err,
-	}
-}
-
-// Run records the invocation and returns the matching response or delegates to Handler.
-func (m *MockRunner) Run(ctx context.Context, dir string, args ...string) ([]byte, []byte, error) {
-	m.mu.Lock()
-	m.Calls = append(m.Calls, args)
-	m.Dirs = append(m.Dirs, dir)
-	key := strings.Join(args, " ")
-	resp, ok := m.Responses[key]
-	handler := m.Handler
-	m.mu.Unlock()
-
-	if handler != nil {
-		return handler(ctx, dir, args...)
-	}
-
-	if ok {
-		return resp.Stdout, resp.Stderr, resp.Err
-	}
-
-	return nil, nil, nil
-}

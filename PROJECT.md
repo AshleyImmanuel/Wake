@@ -1,186 +1,173 @@
-# Project: Sentinel MVP Phase 2 (Reconciliation)
+# Project: Wake Codebase Review, Modularization, Optimization, and Comprehensive Testing
 
 ## Architecture
-Sentinel Phase 2 introduces Git repository reconciliation against saved task state checkpoints. The architecture bridges the SQLite checkpoint persistence layer (Phase 1) and the live Git filesystem state via a modular, testable Go architecture:
+Wake is an autonomous context checkpointing and repository state reconciliation platform. It tracks development tasks via an append-only event stream, computes current task state via deterministic state reduction, persists snapshots into SQLite, inspects live Git repository status, and reconciles saved checkpoints against the working tree to determine SAFE, STALE, or CONFLICT states.
 
 ```
-+-------------------------------------------------------------------------------+
-|                               SENTINEL CLI                                    |
-|              (cmd/checkpoint.go, cmd/status.go, cmd/root.go)                   |
-+-------------------------------------------------------------------------------+
-           |                                                 |
-           v                                                 v
-+------------------------+                        +-----------------------------+
-|    STATE & DB LAYER    |                        |        GIT CLI LAYER        |
-|  (internal/state, db)  |                        |       (internal/git)        |
-| - Checkpoint model     |                        | - Runner (OSRunner / Mock)  |
-| - StateData snapshot   |                        | - Git Client & Status Parser|
-| - SQLite Checkpoints   |                        | - RepositoryState snapshot  |
-+------------------------+                        +-----------------------------+
-           \                                                 /
-            \                                               /
-             v                                             v
-        +------------------------------------------------------+
-        |                RECONCILIATION ENGINE                 |
-        |                (internal/reconcile)                  |
-        | - Reconcile(checkpoint, repoState, taskFiles)        |
-        | - SAFE / STALE / CONFLICT Evaluation                 |
-        | - Constraint & Decision Violation Detection          |
-        | - Completed Milestone Invalidation Detection         |
-        +------------------------------------------------------+
-                                   |
-                                   v
-        +------------------------------------------------------+
-        |                  VERIFICATION SUITE                  |
-        |           (internal/reconcile/*_test.go)             |
-        | - Isolated Temp Git Repos (t.TempDir)                |
-        | - Automated SAFE, STALE, CONFLICT Scenarios          |
-        +------------------------------------------------------+
+[CLI / Presentation Layer]
+(cmd/: root, checkpoint, status, history, resume)
+          │
+          ▼
+[Application Service Facade]
+(internal/service: TaskService, CheckpointService, StatusService, HistoryService, ResumeService)
+          │
+    ┌─────┴──────────────────┬─────────────────┐
+    ▼                        ▼                 ▼
+[State & Event Engine]  [Git Wrapper]   [Persistence Store]
+(internal/state, events)(internal/git)   (internal/db Store)
+    │                        │
+    └───────────┬────────────┘
+                ▼
+      [Reconciliation Engine]
+      (internal/reconcile)
+                │
+                ▼
+      [Unified Test Harness]
+      (internal/testutil)
 ```
 
 ## Feature Inventory
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
-| 1 | Git Command Runner | Execution interface (Runner, OSRunner, MockRunner) for git CLI invocation with context support | M1 | Survey R1 |
-| 2 | Git Status & Diff Parser | Parse porcelain v1 output into structured Staged, Unstaged, Untracked, and Unmerged files | M1 | Survey R1 |
-| 3 | Git Client Implementation | High-level Git client retrieving commit hash, branch, clean status, and repo state | M1 | Survey R1 |
-| 4 | Git Error Classification | Structured errors (ErrGitNotFound, ErrNotGitRepo, ErrNoCommits, ErrMergeConflict, etc.) | M1 | Survey R1 |
-| 5 | Reconciliation Status Types | Type definitions for StatusSafe, StatusStale, StatusConflict, and ReconciliationResult | M2 | Survey R2 |
-| 6 | SAFE State Evaluation | Evaluate identical commit, matching branch, and zero uncommitted changes | M2 | Survey R2 |
-| 7 | STALE State Evaluation | Evaluate forward commits and non-conflicting task modifications | M2 | Survey R2 |
-| 8 | CONFLICT State Evaluation | Evaluate constraint violations, invalidated completed artifacts, and merge conflicts | M2 | Survey R2 |
-| 9 | Temporary Git Repo Test Harness | Test helper initializing temporary git repos with t.TempDir() and configurable git state | M3 | Survey Suite |
-| 10| SAFE Scenario Tests | Automated Go test verifying SAFE status when repo matches checkpoint commit cleanly | M3 | Survey Suite |
-| 11| STALE Scenario Tests | Automated Go test verifying STALE status when non-conflicting changes or forward commits occur | M3 | Survey Suite |
-| 12| CONFLICT Scenario Tests | Automated Go test verifying CONFLICT status when constraints or task files are modified | M3 | Survey Suite |
-| 13| CLI Status Integration | Integrate Git State and Reconciliation into `sentinel status` and `sentinel checkpoint` | M3 | Survey Integration |
+| 1 | Shared Test Harness & Fixture Utility | Unified Git repository simulator and SQLite test fixture (`internal/testutil`) | M1 | Survey & Test Gap |
+| 2 | UTF-8 Byte Sort Order Fix | Fix inverted UTF-8 string sort order in `internal/git/adversarial_test.go:206` | M1 | Survey & Test Fix |
+| 3 | Strongly-Typed Event Payloads | Concrete payload structs, constructors, and JSON serialization in `internal/events` | M2 | Survey & Modularization |
+| 4 | Comprehensive 17-Event State Reducer | Full event reduction across all 17 event types, task ID parsing, and dynamic confidence | M2 | Survey & Logic Optimization |
+| 5 | Incremental Event Folding | Efficient folding function (`Fold`) for delta state evaluation | M2 | Survey & Optimization |
+| 6 | Database Store Abstraction & PRAGMAs | `Store` interface, WAL journal mode, busy timeout, and composite B-tree indexes in `internal/db` | M3 | Survey & Modularization |
+| 7 | Atomic Multi-Entity Transactions | Transactional boundaries (`WithTx`) for multi-entity event and checkpoint persistence | M3 | Survey & DB Integrity |
+| 8 | Git Invocations Consolidation | Optimized branch and status extraction via `--porcelain=v1 --branch` | M4 | Survey & Performance |
+| 9 | Reconciler Delimiter & Matching Optimization | Precompiled token regex, `strings.FieldsFunc`, and indexed membership matching | M4 | Survey & Performance |
+| 10 | Filesystem Check Decoupling in Reconciler | Abstract file existence check interface in `internal/reconcile` | M4 | Survey & Modularization |
+| 11 | Application Service Facade | `internal/service` package implementing `TaskService` interface for all core workflows | M5 | Survey & Architecture |
+| 12 | CLI Decoupling & Expanded Command Coverage | Refactor `cmd/` to thin delegates; implement comprehensive `cmd/history_test.go` and `cmd/resume_test.go` | M5 | Survey & Coverage |
+| 13 | Comprehensive Verification Suite | 100% passing tests across `go test -v ./...` and 0 warnings on `go vet ./...` | M6 | Original Request Criteria |
+| 14 | Adversarial Coverage Hardening (Tier 5) | White-box stress tests, concurrency torture tests, and edge case resilience | M6 | E2E Hardening |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| M1 | Git CLI Wrapper | `internal/git` package: Runner, OSRunner, StatusParser, Client, RepositoryState, unit tests | None | DONE |
-| M2 | Reconciliation Engine | `internal/reconcile` package: Reconcile function, evaluation logic for SAFE/STALE/CONFLICT, constraint and invalidation checks, unit tests | M1 | DONE |
-| M3 | Verification Suite & Integration | `internal/reconcile/*_test.go` integration tests with temp Git repos, `cmd/status.go` & `cmd/checkpoint.go` integration, end-to-end `go test ./...` verification | M1, M2 | DONE |
+| M1 | Test Infrastructure & Shared Harness | `internal/testutil`, fix `internal/git/adversarial_test.go` | none | IN_PROGRESS |
+| M2 | Core Events & State Engine Optimization | `internal/events`, `internal/state`, full event reduction & typing | M1 | PLANNED |
+| M3 | Database Store Modularization & Indexing | `internal/db`, `Store` interface, WAL mode, indexes, transactions | M1 | PLANNED |
+| M4 | Git & Reconciler Optimization & Decoupling | `internal/git`, `internal/reconcile`, regex & status optimization | M1, M2 | PLANNED |
+| M5 | Application Service Facade & CLI Testing | `internal/service`, refactor `cmd/`, add `history_test.go`, `resume_test.go` | M2, M3, M4 | PLANNED |
+| M6 | Final E2E Verification & Adversarial Hardening | E2E suite validation, `go test -v ./...`, `go vet ./...`, Tier 5 stress | M5 | PLANNED |
 
 ## Interface Contracts
 
-### internal/git ↔ internal/reconcile
+### `internal/events` ↔ `internal/state`
 ```go
-package git
+package events
 
-type StatusCode string
+type EventType string
 
 const (
-    StatusUnmodified StatusCode = " "
-    StatusModified   StatusCode = "M"
-    StatusAdded      StatusCode = "A"
-    StatusDeleted    StatusCode = "D"
-    StatusRenamed    StatusCode = "R"
-    StatusUntracked  StatusCode = "?"
-    StatusUnmerged   StatusCode = "U"
+    TaskStarted        EventType = "TASK_STARTED"
+    RequirementAdded   EventType = "REQUIREMENT_ADDED"
+    ConstraintAdded    EventType = "CONSTRAINT_ADDED"
+    UserApproval       EventType = "USER_APPROVAL"
+    UserRejection      EventType = "USER_REJECTION"
+    DecisionMade       EventType = "DECISION_MADE"
+    FileChanged        EventType = "FILE_CHANGED"
+    CommandExecuted    EventType = "COMMAND_EXECUTED"
+    TestStarted        EventType = "TEST_STARTED"
+    TestPassed         EventType = "TEST_PASSED"
+    TestFailed         EventType = "TEST_FAILED"
+    BlockerCreated     EventType = "BLOCKER_CREATED"
+    BlockerResolved    EventType = "BLOCKER_RESOLVED"
+    MilestoneCompleted EventType = "MILESTONE_COMPLETED"
+    GitCommit          EventType = "GIT_COMMIT"
+    SessionInterrupted EventType = "SESSION_INTERRUPTED"
+    SessionResumed     EventType = "SESSION_RESUMED"
 )
 
-type FileStatus struct {
-    Path           string     `json:"path"`
-    OrigPath       string     `json:"orig_path,omitempty"`
-    StagingStatus  StatusCode `json:"staging_status"`
-    WorkTreeStatus StatusCode `json:"worktree_status"`
-}
-
-type RepositoryState struct {
-    RootPath          string       `json:"root_path"`
-    Branch            string       `json:"branch"`
-    CommitHash        string       `json:"commit_hash"`
-    IsDetached        bool         `json:"is_detached"`
-    HasCommits        bool         `json:"has_commits"`
-    IsClean           bool         `json:"is_clean"`
-    HasMergeConflicts bool         `json:"has_merge_conflicts"`
-    StagedFiles       []FileStatus `json:"staged_files"`
-    UnstagedFiles     []FileStatus `json:"unstaged_files"`
-    UntrackedFiles    []string     `json:"untracked_files"`
-    UnmergedFiles     []string     `json:"unmerged_files"`
-    ModifiedFiles     []string     `json:"modified_files"`
-}
-
-type Client interface {
-    GetState(ctx context.Context, repoPath string) (*RepositoryState, error)
-    GetCurrentCommit(ctx context.Context, repoPath string) (string, error)
-    GetCurrentBranch(ctx context.Context, repoPath string) (string, error)
-    IsClean(ctx context.Context, repoPath string) (bool, error)
-    CommitExists(ctx context.Context, repoPath string, commitHash string) (bool, error)
-    IsAncestor(ctx context.Context, repoPath string, ancestorCommit, descendantCommit string) (bool, error)
-    GetChangedFilesBetween(ctx context.Context, repoPath string, fromCommit, toCommit string) ([]string, error)
+type Event struct {
+    ID        uuid.UUID              `json:"id"`
+    TaskID    uuid.UUID              `json:"task_id"`
+    Type      EventType              `json:"type"`
+    Timestamp time.Time              `json:"timestamp"`
+    Payload   map[string]interface{} `json:"payload"`
 }
 ```
 
-### internal/state ↔ internal/reconcile
+### `internal/db` (Store Interface)
 ```go
-package reconcile
+package db
 
-import (
-    "github.com/sentinel/sentinel/internal/git"
-    "github.com/sentinel/sentinel/internal/state"
-)
-
-type ReconciliationStatus string
-
-const (
-    StatusSafe     ReconciliationStatus = "SAFE"
-    StatusStale    ReconciliationStatus = "STALE"
-    StatusConflict ReconciliationStatus = "CONFLICT"
-)
-
-type ReconciliationResult struct {
-    Status               ReconciliationStatus `json:"status"`
-    Reason               string               `json:"reason"`
-    CheckpointCommit     string               `json:"checkpoint_commit"`
-    CurrentCommit        string               `json:"current_commit"`
-    BranchMatch          bool                 `json:"branch_match"`
-    ChangedFiles         []string             `json:"changed_files"`
-    TaskRelatedChanges   []string             `json:"task_related_changes"`
-    UnrelatedChanges     []string             `json:"unrelated_changes"`
-    ConstraintViolations []string             `json:"constraint_violations"`
-    InvalidatedClaims    []string             `json:"invalidated_claims"`
+type Store interface {
+    Init() error
+    SaveCheckpoint(ctx context.Context, cp state.Checkpoint) error
+    GetLatestCheckpoint(ctx context.Context, taskID string) (*state.Checkpoint, error)
+    SaveEvent(ctx context.Context, e events.Event) error
+    GetEvents(ctx context.Context, taskID string) ([]events.Event, error)
+    WithTx(ctx context.Context, fn func(tx Store) error) error
+    Close() error
 }
+```
 
-// Engine evaluates a Checkpoint against live Git repository state.
-type Engine interface {
-    Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string) ReconciliationResult
+### `internal/service` (Application Service)
+```go
+package service
+
+type TaskService interface {
+    CreateCheckpoint(ctx context.Context, req CheckpointRequest) (*state.Checkpoint, error)
+    GetStatus(ctx context.Context, req StatusRequest) (*reconcile.ReconciliationResult, error)
+    GetHistory(ctx context.Context, taskID string) ([]events.Event, error)
+    ResumeTask(ctx context.Context, taskID string) (*ResumePacket, error)
 }
-
-func Reconcile(cp state.Checkpoint, repo git.RepositoryState, taskFiles []string) ReconciliationResult
 ```
 
 ## Code Layout
 ```
 C:/Users/USER/Desktop/Sentinel/
-|-- cmd/
-|   |-- checkpoint.go          # Checkpoint command with Git state & reconciliation
-|   |-- root.go                # Root CLI command
-|   `-- status.go              # Status command displaying SAFE/STALE/CONFLICT
-|-- internal/
-|   |-- db/
-|   |   `-- db.go              # SQLite database & migrations
-|   |-- events/
-|   |   `-- models.go          # Event definitions
-|   |-- git/
-|   |   |-- client.go          # Git Client implementation & constructor
-|   |   |-- errors.go          # Git error types
-|   |   |-- models.go          # RepositoryState, FileStatus, StatusCode
-|   |   |-- parser.go          # Porcelain status parser
-|   |   |-- runner.go          # Runner and OSRunner execution interfaces
-|   |   |-- parser_test.go     # Unit tests for porcelain parser
-|   |   `-- client_test.go     # Tests for git client
-|   |-- reconcile/
-|   |   |-- engine.go          # Reconcile function and status evaluation
-|   |   |-- models.go          # ReconciliationStatus and ReconciliationResult
-|   |   |-- engine_test.go     # Unit tests for reconciliation logic
-|   |   `-- reconcile_test.go  # Autonomous verification suite with temp git repos
-|   `-- state/
-|       |-- engine.go          # Event reduction engine
-|       |-- engine_test.go     # Reducer unit tests
-|       `-- models.go          # Checkpoint, State, Decision, Blocker
-|-- go.mod
-|-- go.sum
-`-- main.go
+├── main.go
+├── go.mod
+├── go.sum
+├── PROJECT.md
+├── TEST_INFRA.md
+├── cmd/
+│   ├── root.go
+│   ├── checkpoint.go
+│   ├── checkpoint_test.go
+│   ├── status.go
+│   ├── status_test.go
+│   ├── history.go
+│   ├── history_test.go
+│   ├── resume.go
+│   └── resume_test.go
+└── internal/
+    ├── events/
+    │   ├── models.go
+    │   └── models_test.go
+    ├── state/
+    │   ├── models.go
+    │   ├── engine.go
+    │   └── engine_test.go
+    ├── db/
+    │   ├── db.go
+    │   ├── store.go
+    │   └── db_test.go
+    ├── git/
+    │   ├── models.go
+    │   ├── runner.go
+    │   ├── parser.go
+    │   ├── parser_test.go
+    │   ├── client.go
+    │   ├── client_test.go
+    │   ├── errors.go
+    │   ├── adversarial_test.go
+    │   └── lifecycle_adversarial_test.go
+    ├── reconcile/
+    │   ├── models.go
+    │   ├── engine.go
+    │   ├── engine_test.go
+    │   └── reconcile_test.go
+    ├── service/
+    │   ├── service.go
+    │   └── service_test.go
+    └── testutil/
+        ├── git.go
+        ├── db.go
+        └── fixtures.go
 ```
