@@ -14,7 +14,11 @@
 
 > **Tags:** `wake`, `mcp-server`, `ai-agents`, `state-machine`, `local-first`
 
-> **[V1.1 RELEASE]:** Wake is currently in v1.1. The core checkpoint, reconciliation, resume pipeline, MCP server, and IDE integrations are fully functional. v1.1 introduces Universal Continuous Recovery Stashing, Git-less Fallback, and Write-Write Conflict Detection. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
+> **[V1.2 RELEASE]:** Wake v1.2 introduces **Universal IDE Support**. The new `wake setup` command auto-generates native MCP configurations and lifecycle hooks (auto-save, conflict checks) for **Cursor, VS Code (Copilot), Windsurf, Kiro, Claude Desktop/Code, Zed, and Antigravity**.
+
+> **[V1.1 RELEASE]:** Introduces Universal Continuous Recovery Stashing, Git-less Fallback hashing, and Write-Write Conflict Detection.
+
+If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
 
 <br/>
 
