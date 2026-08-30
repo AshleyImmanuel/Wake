@@ -3,7 +3,7 @@
   
   <br/>
   
-  <h1>Wake</h1>
+  <h1>Wake AI</h1>
   <p><b>The missing "Save State" engine for autonomous AI coding agents.</b></p>
   
   [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
