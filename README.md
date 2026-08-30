@@ -12,7 +12,7 @@
 
 > **Tags:** `wake`, `mcp-server`, `ai-agents`, `state-machine`, `local-first`
 
-> **[BETA RELEASE NOTICE]:** Wake is currently in v1.0 beta. The core checkpoint, reconciliation, resume pipeline, MCP server, and IDE integrations are fully functional. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
+> **[V1.1 RELEASE]:** Wake is currently in v1.1. The core checkpoint, reconciliation, resume pipeline, MCP server, and IDE integrations are fully functional. v1.1 introduces Universal Continuous Recovery Stashing, Git-less Fallback, and Write-Write Conflict Detection. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
 
 <br/>
 
@@ -57,18 +57,32 @@ It anchors the agent's memory to the local codebase using a highly performant, e
 - **Pre-Checkpoint Safeguards**: Blocks state snapshots when unreviewed modifications or untracked files are detected in the working directory.
 - **Dynamic Feature Pivots**: Execute `wake objective "New Goal"` to safely transition the agent's state without a destructive reset.
 - **Zero-Config Background File Watcher**: Wake's MCP server seamlessly embeds a lightweight filesystem watcher. When an IDE is connected to Wake's MCP server, Wake silently monitors for idle file modifications and synthesizes checkpoints automatically in the background—no explicit tool calling required.
+- **Universal Continuous Recovery Stashing**: If you manually edit a file, the background daemon proactively stashes your work into `.wake/recovery_stash/` *before* a rogue AI has the chance to overwrite it with a tool call. 100% IDE-agnostic data loss prevention.
+- **Write-Write Conflict Detection**: Optimistic concurrency controls explicitly detect if an AI and a human edit the same file simultaneously, blocking the AI's write tool to prevent silent data destruction.
+- **Author Attribution Markers**: Explicitly differentiates between `AI_MODIFIED` and `HUMAN_MODIFIED` code for precision reconciliation.
+- **Git-less File Hashing Fallback**: Wake is completely dependency-free. If run outside a Git repository, it seamlessly falls back to a custom `hashfs` engine to compute SHA-256 state tracking natively.
 - **Universal MCP Server**: Built-in Model Context Protocol support (`wake mcp`). Seamlessly plug Wake into cloud-based AI agents (Claude Desktop, Cursor) or 100% local, free, air-gapped models (Ollama, LM Studio) for maximum privacy—with zero extra configuration.
 
 ## Quickstart
 
-### Build from Source
+### Installation
+Wake is built completely in Go for blazing fast performance and simple, dependency-free binary installation.
 
+**Option 1: Using Go (Recommended)**
+```bash
+go install github.com/AshleyImmanuel/Wake@latest
+```
+This automatically compiles and places the `wake` binary in your system path.
+
+**Option 2: Direct Binary Download**
+You can download pre-compiled, zero-dependency binaries for Windows (`.exe`), macOS, and Linux directly from our [GitHub Releases Page](https://github.com/AshleyImmanuel/Wake/releases).
+
+### Build from Source
 Ensure you have Go 1.24+ installed:
 
 ```bash
 git clone https://github.com/AshleyImmanuel/Wake.git
 cd Wake
-go mod tidy
 go build -o wake .
 ```
 
@@ -132,8 +146,10 @@ Add the following to your MCP configuration to execute Wake dynamically:
 | `wake resume` | Generate a compact ~150 token recovery packet for a new AI session |
 | `wake history` | View the event history of the active task |
 | `wake objective "..."` | Pivot the task objective without resetting state |
-| `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration (auto-starts background watcher) |
+| `wake mcp` | Start the MCP (Model Context Protocol) server for IDE integration (auto-starts background watcher and continuous stashing) |
 | `wake setup <ide>` | Generate IDE configuration (Cursor, VS Code, Claude Code). Use `--antigravity` to auto-generate `hooks.json` for native Antigravity IDE interception. |
+| `wake check-conflict` | Optimistic concurrency check to block rogue AI overwrites. |
+| `wake mark` | Mark a file with Author Attribution (AI or HUMAN). |
 
 ### Checkpoint Flags
 
