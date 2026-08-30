@@ -35,7 +35,7 @@ Wake is an autonomous context checkpointing, repository state reconciliation, an
 ## Feature & Vulnerability Inventory
 | # | Item | Category | Description | Milestone | Source |
 |---|------|----------|-------------|-----------|--------|
-| 1 | Test Harness & Build Fixes | Build / Test | Fix `e2e/harness_test.go` pointer return/dereference errors and `testutil_test.go` path mismatch (`.wake` vs `.sentinel`) | M1 | Survey (SEC-14, BUG-08) [DONE] |
+| 1 | Test Harness & Build Fixes | Build / Test | Fix `e2e/harness_test.go` pointer return/dereference errors and `testutil_test.go` path mismatch (`.wake` vs `.wake`) | M1 | Survey (SEC-14, BUG-08) [DONE] |
 | 2 | Path Traversal & Safe Path Validation | Security | Prevent path traversal in `internal/reconcile/engine.go` via `filepath.Rel` containment and rejecting escape paths | M1 | Survey (SEC-01) [DONE] |
 | 3 | False CONFLICT & Wildcard Sanity | Bug / Logic | Prevent DoS false CONFLICTs on wildcards (`*.go`), version numbers (`v2.0`), step counters, URLs in `internal/reconcile` | M1 | Survey (SEC-02, BUG-03) [DONE] |
 | 4 | Git CLI Flag Injection & Ref Validation | Security | Validate git refs against `^[a-zA-Z0-9_\.\/\-]+$`, disallow leading `-`, append `--` to git diff commands in `internal/git/client.go` | M1 | Survey (SEC-05, SEC-06) [DONE] |
@@ -129,7 +129,7 @@ type CheckpointRequest struct {
 
 ## Code Layout
 ```
-C:/Users/USER/Desktop/Sentinel/
+C:/Users/USER/Desktop/Wake/
 ├── main.go
 ├── go.mod
 ├── go.sum

@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/wake/wake/internal/git"
-	"github.com/wake/wake/internal/state"
+	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/state"
 )
 
 var (
@@ -382,7 +382,7 @@ func normalizePath(p string) string {
 	return cleaned
 }
 
-// isInternalMetadataPath identifies Wake, Sentinel, and Git internal working files.
+// isInternalMetadataPath identifies Wake and Git internal working files.
 func isInternalMetadataPath(p string) bool {
 	p = normalizePath(p)
 	if p == "" {
@@ -390,7 +390,6 @@ func isInternalMetadataPath(p string) bool {
 	}
 	lower := strings.ToLower(p)
 	if strings.HasPrefix(lower, ".wake/") || lower == ".wake" ||
-		strings.HasPrefix(lower, ".sentinel/") || lower == ".sentinel" ||
 		strings.HasPrefix(lower, ".git/") || lower == ".git" {
 		return true
 	}

@@ -6,9 +6,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/wake/wake/internal/db"
-	"github.com/wake/wake/internal/git"
-	"github.com/wake/wake/internal/service"
+	"github.com/AshleyImmanuel/Wake/internal/db"
+	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/service"
 )
 
 var (
@@ -49,7 +49,7 @@ func runCheckpointWithOpts(ctx context.Context, targetDir, taskIDStr, objective 
 
 	database, err := db.InitDB(repoRoot)
 	if err != nil {
-		return fmt.Errorf("failed to initialize sentinel database: %w", err)
+		return fmt.Errorf("failed to initialize wake database: %w", err)
 	}
 	defer database.Close()
 

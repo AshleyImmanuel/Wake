@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/wake/wake/internal/db"
-	"github.com/wake/wake/internal/git"
-	"github.com/wake/wake/internal/reconcile"
-	"github.com/wake/wake/internal/service"
+	"github.com/AshleyImmanuel/Wake/internal/db"
+	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/reconcile"
+	"github.com/AshleyImmanuel/Wake/internal/service"
 )
 
 var (

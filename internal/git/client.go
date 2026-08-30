@@ -18,7 +18,7 @@ func isValidGitRef(ref string) bool {
 	return validGitRefRegex.MatchString(ref)
 }
 
-// Client defines the high-level Git operations required by Sentinel.
+// Client defines the high-level Git operations required by Wake.
 type Client interface {
 	// GetState extracts a complete snapshot of repository state (commit, branch, cleanliness, modified files).
 	GetState(ctx context.Context, repoPath string) (*RepositoryState, error)

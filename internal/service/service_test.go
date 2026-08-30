@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/wake/wake/internal/db"
-	"github.com/wake/wake/internal/events"
-	"github.com/wake/wake/internal/git"
-	"github.com/wake/wake/internal/reconcile"
+	"github.com/AshleyImmanuel/Wake/internal/db"
+	"github.com/AshleyImmanuel/Wake/internal/events"
+	"github.com/AshleyImmanuel/Wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/reconcile"
 )
 
 type mockGitClient struct {

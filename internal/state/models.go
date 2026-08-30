@@ -2,7 +2,7 @@ package state
 
 import "github.com/google/uuid"
 
-// ConfidenceLevel indicates how sure Sentinel is about the current state validity
+// ConfidenceLevel indicates how sure Wake is about the current state validity
 type ConfidenceLevel string
 
 const (

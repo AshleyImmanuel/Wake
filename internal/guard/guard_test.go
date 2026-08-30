@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/wake/wake/internal/git"
+	"github.com/AshleyImmanuel/Wake/internal/git"
 )
 
 func TestValidatePreCheckpoint(t *testing.T) {
@@ -84,7 +84,7 @@ func TestValidatePreCheckpoint(t *testing.T) {
 	t.Run("Internal metadata paths are ignored", func(t *testing.T) {
 		opts := CheckpointGuardOptions{}
 		repoState := &git.RepositoryState{
-			UntrackedFiles: []string{".wake/state.json", ".sentinel/config", ".git/info/exclude"},
+			UntrackedFiles: []string{".wake/state.json", ".wake/config", ".git/info/exclude"},
 			ModifiedFiles:  []string{".wake", ".git"},
 		}
 		err := ValidatePreCheckpoint(ctx, repoState, opts)
@@ -175,7 +175,6 @@ func TestHelperFunctions(t *testing.T) {
 		}{
 			{".wake", true},
 			{".wake/file", true},
-			{".sentinel", true},
 			{".git", true},
 			{".git/config", true},
 			{"normal/path", false},
