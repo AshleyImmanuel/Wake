@@ -41,7 +41,7 @@ It anchors the AI's memory to the physical codebase using an event-sourced SQLit
 - **Constraint Enforcement**: If you tell the AI "Do not modify auth.go", and you manually modify `auth.go` while it sleeps, Wake throws a hard `[CONFLICT]` to prevent the AI from overwriting your work.
 - **Pre-Checkpoint Guard**: Blocks blind checkpoints when unreviewed modifications or untracked files exist in the working tree.
 - **Feature Pivot Support**: Run `wake objective "New Goal"` to safely pivot the AI's memory without a full reset.
-
+- **Universal MCP Server**: Built-in Model Context Protocol support (`wake mcp`). Seamlessly plug Wake into cloud-based AI agents (Claude Desktop, Cursor) or 100% local, free, air-gapped models (Ollama, LM Studio) for maximum privacy—with zero extra configuration.
 ## Quickstart
 
 ### Build from Source
