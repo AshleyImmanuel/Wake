@@ -10,6 +10,8 @@
   [![Version](https://img.shields.io/badge/Version-v1.0--beta-orange.svg)]()
 </div>
 
+> **Tags:** `wake`, `mcp-server`, `ai-agents`, `state-machine`, `local-first`
+
 > **[BETA RELEASE NOTICE]:** Wake is currently in v1.0 beta. The core checkpoint, reconciliation, resume pipeline, MCP server, and IDE integrations are fully functional. If you find bugs or want to contribute, please reach out: **immanuelashley77@gmail.com**
 
 <br/>
@@ -133,6 +135,14 @@ Wake is built to **complement**, not replace, existing AI coding tools:
 | **LangGraph / Checkpointers** | Python state-graph execution | Wake adds physical file reconciliation to internal memory states |
 | **Cursor / Aider** | IDE and codebase semantic search | Wake acts as a background "save state" layer to persist constraints across terminal reboots and handoffs |
 | **Devin / Cloud Agents** | Autonomous execution in persistent cloud environments | Wake provides a local-first alternative for developers who want state-persistence on their local machine |
+
+## Security & Compliance (DPDP Act Ready)
+
+Wake is built for high-risk, commercial, and enterprise-grade environments with **Privacy by Design**:
+- **0-Vulnerability Codebase**: Fully audited with `gosec` yielding zero vulnerabilities. Safe against path traversal, integer overflows, and command injections.
+- **DPDP Act Compliant**: Wake is 100% local. It collects **zero telemetry**, makes **no external HTTP calls**, and strictly minimizes data collection to local UUIDs/Agent Names for tracking modifications. 
+- **Absolute Local Sovereignty**: All state is persisted in a local SQLite ledger (`.wake/`). You maintain absolute control and erasure rights over your data.
+- **Strict File Guards**: Enforces strict `0600`/`0750` permissions to prevent unauthorized tampering of internal ledger and config files.
 
 ## Architecture
 
